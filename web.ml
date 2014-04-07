@@ -1,9 +1,13 @@
 module H = Dom_html
 let js = Js.string
 
-let div_class c =
+let div_class ?extraclass c =
   let d = H.createDiv H.document in
-  d##className <- js c;
+  let cls = match extraclass with
+  | None -> c
+  | Some ec -> c ^ " " ^ ec
+  in
+  d##className <- js cls;
   d
 
 type position = float * float
@@ -16,11 +20,13 @@ type mouse =
   ; mutable m_dir: direction
   }
 
+let style_pos d (x, y) =
+  let style f = js (Printf.sprintf "%.fpx" (60. *. f)) in
+  d##style##left <- style x;
+  d##style##top <- style y
+
 let mouse_move mouse pos =
-  let style f = js (Printf.sprintf "%.fpx" (60. *. f +. 30.)) in
-  let (x, y) = pos in
-  mouse.m_dom##style##left <- style x;
-  mouse.m_dom##style##top <- style y;
+  style_pos mouse.m_dom pos;
   mouse.m_pos <- pos
 
 let mouse_turn mouse =
@@ -43,13 +49,38 @@ let update_pos dir (x, y) =
 let int_pos (x, y) =
   (int_of_float x, int_of_float y)
 
-let wall_at pos dir =
-  int_pos pos = (4, 2) && dir = R
+type wall =
+  { w_dom: H.divElement Js.t
+  ; w_pos: int * int
+  ; w_dir: direction
+  }
 
-let mouse_anim mouse =
+let wall_create g pos dir =
+  let (x, y) = pos in
+  let fpos = (float x, float y) in
+  let extraclass = match dir with
+  | U -> "wall-up"
+  | D -> "wall-down"
+  | L -> "wall-left"
+  | R -> "wall-right"
+  in
+  let d = div_class ~extraclass "wall" in
+  style_pos d fpos;
+  Dom.appendChild g d;
+  { w_dom = d
+  ; w_pos = pos
+  ; w_dir = dir
+  }
+
+let mouse_anim walls mouse =
   let dir = mouse.m_dir in
   let pos = mouse.m_pos in
-  if wall_at pos dir then
+  let wall_present = List.exists
+    (fun w ->
+      int_pos pos = w.w_pos && dir = w.w_dir
+    ) walls
+  in
+  if wall_present then
     mouse_turn mouse;
   let new_pos = update_pos dir pos in
   mouse_move mouse new_pos
@@ -70,9 +101,8 @@ let start_game g =
   for i = 1 to 8 do
     let row = div_class "row" in
     for j = 1 to 8 do
-      let evenodd = if (i + j) mod 2 = 0 then " cell-even" else " cell-odd" in
-      let cls = "cell" ^ evenodd in
-      let cell = div_class cls in
+      let extraclass = if (i + j) mod 2 = 0 then "cell-even" else "cell-odd" in
+      let cell = div_class ~extraclass "cell" in
       Dom.appendChild row cell
     done;
     Dom.appendChild g row
@@ -83,8 +113,13 @@ let start_game g =
     ; mouse_spawn g (2., 2.)
     ]
   in
+  let walls =
+    [ wall_create g (4, 2) R
+    ; wall_create g (4, 4) D
+    ]
+  in
   let anim () =
-    List.iter mouse_anim mouses
+    List.iter (mouse_anim walls) mouses
   in
   H.window##setInterval(Js.wrap_callback anim, 16.)
 
