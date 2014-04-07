@@ -1,14 +1,18 @@
 module H = Dom_html
 let js = Js.string
 
+let div_class c =
+  let d = H.createDiv H.document in
+  d##className <- js c;
+  d
+
 let start_game g =
   for i = 1 to 8 do
-    let row = H.createDiv H.document in
-    row##className <- js"row";
+    let row = div_class "row" in
     for j = 1 to 8 do
-      let cell = H.createDiv H.document in
       let evenodd = if (i + j) mod 2 = 0 then " cell-even" else " cell-odd" in
-      cell##className <- js("cell" ^ evenodd);
+      let cls = "cell" ^ evenodd in
+      let cell = div_class cls in
       Dom.appendChild row cell
     done;
     Dom.appendChild g row
