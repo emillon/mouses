@@ -23,11 +23,35 @@ let mouse_move mouse pos =
   mouse.m_dom##style##top <- style y;
   mouse.m_pos <- pos
 
-let update_pos _ (x, y) =
-  (x+.0.05, y)
+let mouse_turn mouse =
+  let new_dir = match mouse.m_dir with
+  | U -> R
+  | L -> U
+  | D -> L
+  | R -> D
+  in
+  mouse.m_dir <- new_dir
+
+let update_pos dir (x, y) =
+  let d = 0.05 in
+  match dir with
+  | U -> (x, y -. d)
+  | D -> (x, y +. d)
+  | L -> (x -. d, y)
+  | R -> (x +. d, y)
+
+let int_pos (x, y) =
+  (int_of_float x, int_of_float y)
+
+let wall_at pos dir =
+  int_pos pos = (4, 2) && dir = R
 
 let mouse_anim mouse =
-  let new_pos = update_pos mouse.m_dir mouse.m_pos in
+  let dir = mouse.m_dir in
+  let pos = mouse.m_pos in
+  if wall_at pos dir then
+    mouse_turn mouse;
+  let new_pos = update_pos dir pos in
   mouse_move mouse new_pos
 
 let mouse_spawn g p =
