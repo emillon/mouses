@@ -1,8 +1,15 @@
 .cell {
-    background-color: #ddd;
     width: 60px;
     height: 60px;
     float: left;
+}
+
+.cell-even {
+    background-color: #ddd;
+}
+
+.cell-odd {
+    background-color: #eee;
 }
 
 .row {

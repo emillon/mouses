@@ -7,7 +7,8 @@ let start_game g =
     row##className <- js"row";
     for j = 1 to 8 do
       let cell = H.createDiv H.document in
-      cell##className <- js"cell";
+      let evenodd = if (i + j) mod 2 = 0 then " cell-even" else " cell-odd" in
+      cell##className <- js("cell" ^ evenodd);
       Dom.appendChild row cell
     done;
     Dom.appendChild g row
