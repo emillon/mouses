@@ -1,0 +1,10 @@
+.cell {
+    background-color: #ddd;
+    width: 60px;
+    height: 60px;
+    float: left;
+}
+
+.row {
+    clear: both;
+}
