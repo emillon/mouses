@@ -20,6 +20,19 @@ type mouse =
   ; mutable m_dir: direction
   }
 
+type wall =
+  { w_dom: H.divElement Js.t
+  ; w_pos: int * int
+  ; w_dir: direction
+  }
+
+type game =
+  { g_dom: H.divElement Js.t
+  ; g_mouses: mouse list
+  ; g_walls: wall list
+  ; g_log: string -> unit
+  }
+
 let style_pos d (x, y) =
   let style f = js (Printf.sprintf "%.fpx" (60. *. f)) in
   d##style##left <- style x;
@@ -38,12 +51,8 @@ let mouse_turn mouse =
   in
   mouse.m_dir <- new_dir
 
-let int_pos (x, y) =
-  (int_of_float x, int_of_float y)
-
-let mouse_exiting m =
-  let (x, y) = int_pos m.m_pos in
-  match m.m_dir with
+let mouse_exiting (x, y) dir =
+  match dir with
   | U -> y = 0
   | D -> y = 7
   | L -> x = 0
@@ -56,12 +65,6 @@ let update_pos dir (x, y) =
   | D -> (x, y +. d)
   | L -> (x -. d, y)
   | R -> (x +. d, y)
-
-type wall =
-  { w_dom: H.divElement Js.t
-  ; w_pos: int * int
-  ; w_dir: direction
-  }
 
 let wall_create g pos dir =
   let (x, y) = pos in
@@ -80,19 +83,38 @@ let wall_create g pos dir =
   ; w_dir = dir
   }
 
-let mouse_anim walls mouse =
+let act_tile (x, y) dir =
+  let (dx, nfx) = modf (x +. 1.) in
+  let (dy, nfy) = modf (y +. 1.) in
+  let nx = int_of_float (nfx -. 1.) in
+  let ny = int_of_float (nfy -. 1.) in
+  let lo d = d < 0.5 in
+  let hi d = d >= 0.5 in
+  match dir with
+  | U when hi dy -> Some (nx, ny + 1)
+  | D when lo dy -> Some (nx, ny)
+  | L when hi dx -> Some (nx + 1, ny)
+  | R when lo dx -> Some (nx, ny)
+  | _ -> None
+
+let mouse_anim g mouse =
   let dir = mouse.m_dir in
   let pos = mouse.m_pos in
-  let wall_front = List.exists
-    (fun w ->
-      int_pos pos = w.w_pos && dir = w.w_dir
-    ) walls
-  in
-  let wall_present =
-    wall_front || mouse_exiting mouse
-  in
-  if wall_present then
-    mouse_turn mouse;
+  begin
+    match act_tile pos dir with
+    | None -> ()
+    | Some (x, y) ->
+      let wall_front = List.exists
+        (fun w ->
+          (x, y) = w.w_pos && dir = w.w_dir
+        ) g.g_walls
+      in
+      let wall_present =
+        wall_front || mouse_exiting (x, y) dir
+      in
+      if wall_present then
+        mouse_turn mouse
+  end;
   let new_pos = update_pos dir pos in
   mouse_move mouse new_pos
 
@@ -108,7 +130,7 @@ let mouse_spawn g p =
   Dom.appendChild g d;
   mouse
 
-let start_game g =
+let start_game d =
   for i = 1 to 8 do
     let row = div_class "row" in
     for j = 1 to 8 do
@@ -116,22 +138,29 @@ let start_game g =
       let cell = div_class ~extraclass "cell" in
       Dom.appendChild row cell
     done;
-    Dom.appendChild g row
+    Dom.appendChild d row
   done;
+  let logDiv = H.createPre H.document in
+  Dom.appendChild d logDiv;
+  let m = mouse_spawn d (0., 2.) in
   let mouses =
-    [ mouse_spawn g (0., 2.)
-    ; mouse_spawn g (1., 2.)
-    ; mouse_spawn g (2., 2.)
+    [ m
     ]
   in
   let walls =
-    [ wall_create g (4, 2) R
-    ; wall_create g (4, 4) D
-    ; wall_create g (3, 4) L
+    [ wall_create d (4, 2) R
+    ; wall_create d (4, 4) D
     ]
   in
+  let g =
+    { g_dom = d
+    ; g_mouses = mouses
+    ; g_walls = walls
+    ; g_log = (fun s -> logDiv##innerHTML <- js s)
+    }
+  in
   let anim () =
-    List.iter (mouse_anim walls) mouses
+    List.iter (mouse_anim g) mouses
   in
   H.window##setInterval(Js.wrap_callback anim, 16.)
 
