@@ -42,6 +42,15 @@ let mouse_move mouse pos =
   style_pos mouse.m_dom pos;
   mouse.m_pos <- pos
 
+let round_near f =
+  float (int_of_float (f +. 0.5))
+
+let round_x (x, y) =
+  (round_near x, y)
+
+let round_y (x, y) =
+  (x, round_near y)
+
 let mouse_turn mouse =
   let new_dir = match mouse.m_dir with
   | U -> R
@@ -49,7 +58,13 @@ let mouse_turn mouse =
   | D -> L
   | R -> D
   in
-  mouse.m_dir <- new_dir
+  mouse.m_dir <- new_dir;
+  let new_pos =
+    match mouse.m_dir with
+    | U | D -> round_x mouse.m_pos
+    | L | R -> round_y mouse.m_pos
+  in
+  mouse.m_pos <- new_pos
 
 let mouse_exiting (x, y) dir =
   match dir with
@@ -83,14 +98,15 @@ let wall_create g pos dir =
   ; w_dir = dir
   }
 
-let act_tile (x, y) dir =
+let mouse_act_tile m =
+  let (x, y) = m.m_pos in
   let (dx, nfx) = modf (x +. 1.) in
   let (dy, nfy) = modf (y +. 1.) in
   let nx = int_of_float (nfx -. 1.) in
   let ny = int_of_float (nfy -. 1.) in
   let lo d = d < 0.5 in
   let hi d = d >= 0.5 in
-  match dir with
+  match m.m_dir with
   | U when hi dy -> Some (nx, ny + 1)
   | D when lo dy -> Some (nx, ny)
   | L when hi dx -> Some (nx + 1, ny)
@@ -100,8 +116,10 @@ let act_tile (x, y) dir =
 let mouse_anim g mouse =
   let dir = mouse.m_dir in
   let pos = mouse.m_pos in
+  let new_pos = update_pos dir pos in
+  mouse_move mouse new_pos;
   begin
-    match act_tile pos dir with
+    match mouse_act_tile mouse with
     | None -> ()
     | Some (x, y) ->
       let wall_front = List.exists
@@ -114,9 +132,7 @@ let mouse_anim g mouse =
       in
       if wall_present then
         mouse_turn mouse
-  end;
-  let new_pos = update_pos dir pos in
-  mouse_move mouse new_pos
+  end
 
 let mouse_spawn g p =
   let d = div_class "mouse" in
