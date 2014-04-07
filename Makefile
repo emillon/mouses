@@ -6,3 +6,6 @@ _obuild/chuchu/chuchu.byte: *.ml
 
 clean:
 	ocp-build -clean
+
+watch:
+	while true ; do inotifywait -qe close_write *.ml; clear ; make ; echo OK ; done
