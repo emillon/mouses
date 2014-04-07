@@ -127,6 +127,7 @@ let start_game g =
   let walls =
     [ wall_create g (4, 2) R
     ; wall_create g (4, 4) D
+    ; wall_create g (3, 4) L
     ]
   in
   let anim () =

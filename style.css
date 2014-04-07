@@ -33,6 +33,12 @@
     position: absolute;
 }
 
+.wall-left {
+    border-left: 2px solid green;
+    width: 58px;
+    height: 60px;
+}
+
 .wall-right {
     border-right: 2px solid green;
     width: 58px;
@@ -41,6 +47,12 @@
 
 .wall-down {
     border-bottom: 2px solid green;
+    width: 60px;
+    height: 58px;
+}
+
+.wall-up {
+    border-top: 2px solid green;
     width: 60px;
     height: 58px;
 }
