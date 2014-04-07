@@ -38,6 +38,17 @@ let mouse_turn mouse =
   in
   mouse.m_dir <- new_dir
 
+let int_pos (x, y) =
+  (int_of_float x, int_of_float y)
+
+let mouse_exiting m =
+  let (x, y) = int_pos m.m_pos in
+  match m.m_dir with
+  | U -> y = 0
+  | D -> y = 7
+  | L -> x = 0
+  | R -> x = 7
+
 let update_pos dir (x, y) =
   let d = 0.05 in
   match dir with
@@ -45,9 +56,6 @@ let update_pos dir (x, y) =
   | D -> (x, y +. d)
   | L -> (x -. d, y)
   | R -> (x +. d, y)
-
-let int_pos (x, y) =
-  (int_of_float x, int_of_float y)
 
 type wall =
   { w_dom: H.divElement Js.t
@@ -75,10 +83,13 @@ let wall_create g pos dir =
 let mouse_anim walls mouse =
   let dir = mouse.m_dir in
   let pos = mouse.m_pos in
-  let wall_present = List.exists
+  let wall_front = List.exists
     (fun w ->
       int_pos pos = w.w_pos && dir = w.w_dir
     ) walls
+  in
+  let wall_present =
+    wall_front || mouse_exiting mouse
   in
   if wall_present then
     mouse_turn mouse;
