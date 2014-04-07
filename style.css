@@ -1,3 +1,7 @@
+#game {
+    position: relative;
+}
+
 .cell {
     width: 60px;
     height: 60px;
@@ -21,25 +25,22 @@
     height: 10px;
     background-color: red;
     position: absolute;
-    margin-top: 30px;
-    margin-left: 30px;
+    margin-top: 25px;
+    margin-left: 25px;
 }
 
 .wall {
-    background-color: green;
     position: absolute;
 }
 
 .wall-right {
-    width: 2px;
+    border-right: 2px solid green;
+    width: 58px;
     height: 60px;
-    margin-left: 60px;
-    margin-top: 10px;
 }
 
 .wall-down {
+    border-bottom: 2px solid green;
     width: 60px;
-    height: 2px;
-    margin-top: 60px;
-    margin-left: 10px;
+    height: 58px;
 }
