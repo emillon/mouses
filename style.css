@@ -19,7 +19,6 @@
 .mouse {
     width: 10px;
     height: 10px;
-    margin: 25px;
     background-color: red;
     position: absolute;
 }

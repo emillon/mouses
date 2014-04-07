@@ -8,28 +8,28 @@ let div_class c =
 
 type mouse =
   { m_dom: H.divElement Js.t
-  ; mutable m_x: int
-  ; mutable m_y: int
+  ; mutable m_x: float
+  ; mutable m_y: float
   }
 
 let mouse_move mouse x y =
-  let style_of_int n = js (Printf.sprintf "%dpx" n) in
-  mouse.m_dom##style##left <- style_of_int x;
-  mouse.m_dom##style##top <- style_of_int y;
+  let style f = js (Printf.sprintf "%.fpx" (60. *. f +. 30.)) in
+  mouse.m_dom##style##left <- style x;
+  mouse.m_dom##style##top <- style y;
   mouse.m_x <- x;
   mouse.m_y <- y
 
 let mouse_anim mouse =
   let x = mouse.m_x in
   let y = mouse.m_y in
-  mouse_move mouse (x+1) y
+  mouse_move mouse (x+.0.01) y
 
 let mouse_spawn g x y =
   let d = div_class "mouse" in
   let mouse =
     { m_dom = d
-    ; m_x = 0
-    ; m_y = 0
+    ; m_x = 0.
+    ; m_y = 0.
     }
   in
   mouse_move mouse x y;
@@ -48,9 +48,9 @@ let start_game g =
     Dom.appendChild g row
   done;
   let mouses =
-    [ mouse_spawn g   0 120
-    ; mouse_spawn g  60 120
-    ; mouse_spawn g 120 120
+    [ mouse_spawn g 0. 2.
+    ; mouse_spawn g 1. 2.
+    ; mouse_spawn g 2. 2.
     ]
   in
   let anim () =
