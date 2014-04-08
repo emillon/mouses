@@ -30,6 +30,7 @@ type game =
   { g_dom: H.divElement Js.t
   ; g_mouses: mouse list
   ; g_walls: wall list
+  ; g_board: direction option array array
   ; g_log: string -> unit
   }
 
@@ -51,20 +52,24 @@ let round_x (x, y) =
 let round_y (x, y) =
   (x, round_near y)
 
-let mouse_turn mouse =
-  let new_dir = match mouse.m_dir with
+let dir_right = function
   | U -> R
   | L -> U
   | D -> L
   | R -> D
-  in
-  mouse.m_dir <- new_dir;
+
+let mouse_turn_to mouse dir =
+  mouse.m_dir <- dir;
   let new_pos =
     match mouse.m_dir with
     | U | D -> round_x mouse.m_pos
     | L | R -> round_y mouse.m_pos
   in
   mouse.m_pos <- new_pos
+
+let mouse_turn mouse =
+  let new_dir = dir_right mouse.m_dir in
+  mouse_turn_to mouse new_dir
 
 let mouse_exiting (x, y) dir =
   match dir with
@@ -122,16 +127,19 @@ let mouse_anim g mouse =
     match mouse_act_tile mouse with
     | None -> ()
     | Some (x, y) ->
-      let wall_front = List.exists
-        (fun w ->
-          (x, y) = w.w_pos && dir = w.w_dir
-        ) g.g_walls
-      in
-      let wall_present =
-        wall_front || mouse_exiting (x, y) dir
-      in
-      if wall_present then
-        mouse_turn mouse
+      match g.g_board.(x).(y) with
+      | Some d -> mouse_turn_to mouse d
+      | None ->
+        let wall_front = List.exists
+          (fun w ->
+            (x, y) = w.w_pos && dir = w.w_dir
+          ) g.g_walls
+        in
+        let wall_present =
+          wall_front || mouse_exiting (x, y) dir
+        in
+        if wall_present then
+          mouse_turn mouse
   end
 
 let mouse_spawn g p =
@@ -146,12 +154,31 @@ let mouse_spawn g p =
   Dom.appendChild g d;
   mouse
 
+let cell_setup c b i j =
+  c##onclick <- H.handler (fun _ ->
+    let d = match b.(i).(j) with
+    | None -> U
+    | Some d -> dir_right d
+    in
+    b.(i).(j) <- Some d;
+    let descr = function
+      | U -> "↑"
+      | D -> "↓"
+      | L -> "←"
+      | R -> "→"
+    in
+    c##innerHTML <- js(descr d);
+    Js._true
+  )
+
 let start_game d =
-  for i = 1 to 8 do
+  let board = Array.make_matrix 8 8 None in
+  for i = 0 to 7 do
     let row = div_class "row" in
-    for j = 1 to 8 do
+    for j = 0 to 7 do
       let extraclass = if (i + j) mod 2 = 0 then "cell-even" else "cell-odd" in
       let cell = div_class ~extraclass "cell" in
+      cell_setup cell board j i;
       Dom.appendChild row cell
     done;
     Dom.appendChild d row
@@ -172,6 +199,7 @@ let start_game d =
     { g_dom = d
     ; g_mouses = mouses
     ; g_walls = walls
+    ; g_board = board
     ; g_log = (fun s -> logDiv##innerHTML <- js s)
     }
   in
