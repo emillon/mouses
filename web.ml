@@ -26,36 +26,10 @@ let dirclass base dir =
   in
   base ^ sfx
 
-type mouse =
-  { m_dom: H.divElement Js.t
-  ; mutable m_pos: position
-  ; mutable m_dir: direction
-  }
-
-type wall =
-  { w_dom: H.divElement Js.t
-  ; w_pos: int * int
-  ; w_dir: direction
-  }
-
-type arrow = (direction * H.divElement Js.t)
-
-type game =
-  { g_dom: H.divElement Js.t
-  ; g_mouses: mouse list
-  ; g_walls: wall list
-  ; g_board: arrow option array array
-  ; g_log: string -> unit
-  }
-
 let style_pos d (x, y) =
   let style f = js (Printf.sprintf "%.fpx" (60. *. f)) in
   d##style##left <- style x;
   d##style##top <- style y
-
-let mouse_move mouse pos =
-  style_pos mouse.m_dom pos;
-  mouse.m_pos <- pos
 
 let round_near f =
   float (int_of_float (f +. 0.5))
@@ -72,23 +46,19 @@ let dir_right = function
   | D -> L
   | R -> D
 
-let mouse_update_class mouse =
-  let extraclass = dirclass "mouse" mouse.m_dir in
-  set_class mouse.m_dom ~extraclass "mouse"
+let update_pos dir (x, y) =
+  let d = 0.05 in
+  match dir with
+  | U -> (x, y -. d)
+  | D -> (x, y +. d)
+  | L -> (x -. d, y)
+  | R -> (x +. d, y)
 
-let mouse_turn_to mouse dir =
-  mouse.m_dir <- dir;
-  mouse_update_class mouse;
-  let new_pos =
-    match mouse.m_dir with
-    | U | D -> round_x mouse.m_pos
-    | L | R -> round_y mouse.m_pos
-  in
-  mouse.m_pos <- new_pos
-
-let mouse_turn mouse =
-  let new_dir = dir_right mouse.m_dir in
-  mouse_turn_to mouse new_dir
+type wall =
+  { w_dom: H.divElement Js.t
+  ; w_pos: int * int
+  ; w_dir: direction
+  }
 
 let mouse_exiting (x, y) dir =
   match dir with
@@ -97,13 +67,83 @@ let mouse_exiting (x, y) dir =
   | L -> x = 0
   | R -> x = 7
 
-let update_pos dir (x, y) =
-  let d = 0.05 in
-  match dir with
-  | U -> (x, y -. d)
-  | D -> (x, y +. d)
-  | L -> (x -. d, y)
-  | R -> (x +. d, y)
+type arrow = (direction * H.divElement Js.t)
+
+class mouse dom pos dir = object(self)
+
+  val dom = dom
+
+  val mutable pos = pos
+  val mutable dir = dir
+
+  method move npos =
+    style_pos dom npos;
+    pos <- npos
+
+  method update_class =
+    let extraclass = dirclass "mouse" dir in
+    set_class dom ~extraclass "mouse"
+
+  method turn_to ndir =
+    dir <- ndir;
+    self#update_class;
+    let new_pos =
+      match dir with
+      | U | D -> round_x pos
+      | L | R -> round_y pos
+    in
+    pos <- new_pos
+
+  method turn =
+    let new_dir = dir_right dir in
+    self#turn_to new_dir
+
+  method act_tile =
+    let (x, y) = pos in
+    let (dx, nfx) = modf (x +. 1.) in
+    let (dy, nfy) = modf (y +. 1.) in
+    let nx = int_of_float (nfx -. 1.) in
+    let ny = int_of_float (nfy -. 1.) in
+    let lo d = d < 0.5 in
+    let hi d = d >= 0.5 in
+    match dir with
+    | U when hi dy -> Some (nx, ny + 1)
+    | D when lo dy -> Some (nx, ny)
+    | L when hi dx -> Some (nx + 1, ny)
+    | R when lo dx -> Some (nx, ny)
+    | _ -> None
+
+  method anim (board:arrow option array array) walls =
+    let new_pos = update_pos dir pos in
+    self#move new_pos;
+    begin
+      match self#act_tile with
+      | None -> ()
+      | Some (x, y) ->
+        match board.(x).(y) with
+        | Some (d, _) -> self#turn_to d
+        | None ->
+          let wall_front = List.exists
+            (fun w ->
+              (x, y) = w.w_pos && dir = w.w_dir
+            ) walls
+          in
+          let wall_present =
+            wall_front || mouse_exiting (x, y) dir
+          in
+          if wall_present then
+            self#turn
+    end
+
+end
+
+type game =
+  { g_dom: H.divElement Js.t
+  ; g_mouses: mouse list
+  ; g_walls: wall list
+  ; g_board: arrow option array array
+  ; g_log: string -> unit
+  }
 
 let wall_create g pos dir =
   let (x, y) = pos in
@@ -117,55 +157,11 @@ let wall_create g pos dir =
   ; w_dir = dir
   }
 
-let mouse_act_tile m =
-  let (x, y) = m.m_pos in
-  let (dx, nfx) = modf (x +. 1.) in
-  let (dy, nfy) = modf (y +. 1.) in
-  let nx = int_of_float (nfx -. 1.) in
-  let ny = int_of_float (nfy -. 1.) in
-  let lo d = d < 0.5 in
-  let hi d = d >= 0.5 in
-  match m.m_dir with
-  | U when hi dy -> Some (nx, ny + 1)
-  | D when lo dy -> Some (nx, ny)
-  | L when hi dx -> Some (nx + 1, ny)
-  | R when lo dx -> Some (nx, ny)
-  | _ -> None
-
-let mouse_anim g mouse =
-  let dir = mouse.m_dir in
-  let pos = mouse.m_pos in
-  let new_pos = update_pos dir pos in
-  mouse_move mouse new_pos;
-  begin
-    match mouse_act_tile mouse with
-    | None -> ()
-    | Some (x, y) ->
-      match g.g_board.(x).(y) with
-      | Some (d, _) -> mouse_turn_to mouse d
-      | None ->
-        let wall_front = List.exists
-          (fun w ->
-            (x, y) = w.w_pos && dir = w.w_dir
-          ) g.g_walls
-        in
-        let wall_present =
-          wall_front || mouse_exiting (x, y) dir
-        in
-        if wall_present then
-          mouse_turn mouse
-  end
-
 let mouse_spawn g p =
   let extraclass = "mouse-right" in
   let d = div_class ~extraclass "mouse" in
-  let mouse =
-    { m_dom = d
-    ; m_pos = (0., 0.)
-    ; m_dir = R
-    }
-  in
-  mouse_move mouse p;
+  let mouse = new mouse d (0., 0.) R in
+  mouse#move p;
   Dom.appendChild g d;
   mouse
 
@@ -219,7 +215,7 @@ let start_game d =
     }
   in
   let anim () =
-    List.iter (mouse_anim g) mouses
+    List.iter (fun m -> m#anim g.g_board g.g_walls) mouses
   in
   H.window##setInterval(Js.wrap_callback anim, 16.)
 
