@@ -130,12 +130,18 @@ class mouse dom pos dir = object(self)
 
 end
 
-and game board walls = object(self)
+and game dom board walls = object(self)
+  val dom = dom
   val board = board
   val walls = walls
   val mutable mouses = []
 
-  method add_mouse (m:mouse) =
+  method add_mouse pos =
+    let extraclass = "mouse-right" in
+    let d = div_class ~extraclass "mouse" in
+    let m = new mouse d (0., 0.) R in
+    m#move pos;
+    Dom.appendChild dom d;
     mouses <- m::mouses
 
   method anim =
@@ -179,14 +185,6 @@ let wall_create g pos dir =
   Dom.appendChild g d;
   new wall d pos dir
 
-let mouse_spawn g p =
-  let extraclass = "mouse-right" in
-  let d = div_class ~extraclass "mouse" in
-  let mouse = new mouse d (0., 0.) R in
-  mouse#move p;
-  Dom.appendChild g d;
-  mouse
-
 let cell_setup c b i j =
   c##onclick <- H.handler (fun _ ->
     let d = match b.(i).(j) with
@@ -223,8 +221,8 @@ let start_game d =
     ; wall_create d (4, 4) D
     ]
   in
-  let g = new game board walls in
-  g#add_mouse (mouse_spawn d (0., 2.));
+  let g = new game d board walls in
+  g#add_mouse (0., 2.);
   g#start
 
 let _ =
