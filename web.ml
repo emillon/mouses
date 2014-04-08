@@ -17,6 +17,15 @@ type position = float * float
 
 type direction = U | D | L | R
 
+let dirclass base dir =
+  let sfx = match dir with
+  | U -> "-up"
+  | D -> "-down"
+  | L -> "-left"
+  | R -> "-right"
+  in
+  base ^ sfx
+
 type mouse =
   { m_dom: H.divElement Js.t
   ; mutable m_pos: position
@@ -64,12 +73,7 @@ let dir_right = function
   | R -> D
 
 let mouse_update_class mouse =
-  let extraclass = match mouse.m_dir with
-  | U -> "mouse-up"
-  | D -> "mouse-down"
-  | L -> "mouse-left"
-  | R -> "mouse-right"
-  in
+  let extraclass = dirclass "mouse" mouse.m_dir in
   set_class mouse.m_dom ~extraclass "mouse"
 
 let mouse_turn_to mouse dir =
@@ -104,12 +108,7 @@ let update_pos dir (x, y) =
 let wall_create g pos dir =
   let (x, y) = pos in
   let fpos = (float x, float y) in
-  let extraclass = match dir with
-  | U -> "wall-up"
-  | D -> "wall-down"
-  | L -> "wall-left"
-  | R -> "wall-right"
-  in
+  let extraclass = dirclass "wall" dir in
   let d = div_class ~extraclass "wall" in
   style_pos d fpos;
   Dom.appendChild g d;
@@ -180,12 +179,7 @@ let cell_setup c b i j =
           dir_right dir
         end
     in
-    let extraclass = match d with
-      | U -> "arrow-up"
-      | D -> "arrow-down"
-      | L -> "arrow-left"
-      | R -> "arrow-right"
-    in
+    let extraclass = dirclass "arrow" d in
     let e' = div_class ~extraclass "arrow" in
     Dom.appendChild c e';
     b.(i).(j) <- Some (d, e');
