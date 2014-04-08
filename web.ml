@@ -54,12 +54,6 @@ let update_pos dir (x, y) =
   | L -> (x -. d, y)
   | R -> (x +. d, y)
 
-type wall =
-  { w_dom: H.divElement Js.t
-  ; w_pos: int * int
-  ; w_dir: direction
-  }
-
 let mouse_exiting (x, y) dir =
   match dir with
   | U -> y = 0
@@ -113,21 +107,17 @@ class mouse dom pos dir = object(self)
     | R when lo dx -> Some (nx, ny)
     | _ -> None
 
-  method anim (board:arrow option array array) walls =
+  method anim (g:game) =
     let new_pos = update_pos dir pos in
     self#move new_pos;
     begin
       match self#act_tile with
       | None -> ()
       | Some (x, y) ->
-        match board.(x).(y) with
+        match g#arrow_at x y with
         | Some (d, _) -> self#turn_to d
         | None ->
-          let wall_front = List.exists
-            (fun w ->
-              (x, y) = w.w_pos && dir = w.w_dir
-            ) walls
-          in
+          let wall_front = g#wall_at x y dir in
           let wall_present =
             wall_front || mouse_exiting (x, y) dir
           in
@@ -137,16 +127,33 @@ class mouse dom pos dir = object(self)
 
 end
 
-class game board walls mouses = object(self)
+and game board walls mouses = object(self)
   val board = board
   val walls = walls
   val mouses = mouses
 
   method anim =
-    List.iter (fun m -> m#anim board walls) mouses
+    List.iter (fun m -> m#anim self) mouses
 
   method start =
     H.window##setInterval(Js.wrap_callback (fun () -> self#anim), 16.)
+
+  method arrow_at x y :arrow option=
+    board.(x).(y)
+
+  method wall_at x y dir =
+    List.exists (fun w ->
+      (x, y) = w#get_pos && dir = w#get_dir
+    ) walls
+end
+
+class wall dom (pos:int*int) (dir:direction) = object
+  val dom = dom
+  val pos = pos
+  val dir = dir
+
+  method get_pos = pos
+  method get_dir = dir
 end
 
 let wall_create g pos dir =
@@ -156,10 +163,7 @@ let wall_create g pos dir =
   let d = div_class ~extraclass "wall" in
   style_pos d fpos;
   Dom.appendChild g d;
-  { w_dom = d
-  ; w_pos = pos
-  ; w_dir = dir
-  }
+  new wall d pos dir
 
 let mouse_spawn g p =
   let extraclass = "mouse-right" in
