@@ -1,13 +1,16 @@
 module H = Dom_html
 let js = Js.string
 
-let div_class ?extraclass c =
-  let d = H.createDiv H.document in
+let set_class d ?extraclass c =
   let cls = match extraclass with
   | None -> c
   | Some ec -> c ^ " " ^ ec
   in
-  d##className <- js cls;
+  d##className <- js cls
+
+let div_class ?extraclass c =
+  let d = H.createDiv H.document in
+  set_class d ?extraclass c;
   d
 
 type position = float * float
@@ -58,8 +61,18 @@ let dir_right = function
   | D -> L
   | R -> D
 
+let mouse_update_class mouse =
+  let extraclass = match mouse.m_dir with
+  | U -> "mouse-up"
+  | D -> "mouse-down"
+  | L -> "mouse-left"
+  | R -> "mouse-right"
+  in
+  set_class mouse.m_dom ~extraclass "mouse"
+
 let mouse_turn_to mouse dir =
   mouse.m_dir <- dir;
+  mouse_update_class mouse;
   let new_pos =
     match mouse.m_dir with
     | U | D -> round_x mouse.m_pos
@@ -143,7 +156,8 @@ let mouse_anim g mouse =
   end
 
 let mouse_spawn g p =
-  let d = div_class "mouse" in
+  let extraclass = "mouse-right" in
+  let d = div_class ~extraclass "mouse" in
   let mouse =
     { m_dom = d
     ; m_pos = (0., 0.)

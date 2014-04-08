@@ -21,13 +21,36 @@
 }
 
 .mouse {
-    width: 10px;
-    height: 10px;
-    background-color: red;
     position: absolute;
     margin-top: 25px;
     margin-left: 25px;
+
+    width: 0px;
+    height: 0px;
+    border-style: solid;
 }
+
+.mouse-up {
+    border-width: 0 5px 10px 5px;
+    border-color: transparent transparent red transparent;
+}
+
+.mouse-down {
+    border-width: 10px 5px 0 5px;
+    border-color: red transparent transparent transparent;
+}
+
+.mouse-left {
+    border-width: 5px 10px 5px 0;
+    border-color: transparent red transparent transparent;
+}
+
+.mouse-right {
+    border-width: 5px 0 5px 10px;
+    border-color: transparent transparent transparent red;
+}
+
+
 
 .wall {
     position: absolute;
