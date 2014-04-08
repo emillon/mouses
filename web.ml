@@ -137,13 +137,17 @@ class mouse dom pos dir = object(self)
 
 end
 
-type game =
-  { g_dom: H.divElement Js.t
-  ; g_mouses: mouse list
-  ; g_walls: wall list
-  ; g_board: arrow option array array
-  ; g_log: string -> unit
-  }
+class game board walls mouses = object(self)
+  val board = board
+  val walls = walls
+  val mouses = mouses
+
+  method anim =
+    List.iter (fun m -> m#anim board walls) mouses
+
+  method start =
+    H.window##setInterval(Js.wrap_callback (fun () -> self#anim), 16.)
+end
 
 let wall_create g pos dir =
   let (x, y) = pos in
@@ -206,18 +210,8 @@ let start_game d =
     ; wall_create d (4, 4) D
     ]
   in
-  let g =
-    { g_dom = d
-    ; g_mouses = mouses
-    ; g_walls = walls
-    ; g_board = board
-    ; g_log = (fun s -> logDiv##innerHTML <- js s)
-    }
-  in
-  let anim () =
-    List.iter (fun m -> m#anim g.g_board g.g_walls) mouses
-  in
-  H.window##setInterval(Js.wrap_callback anim, 16.)
+  let g = new game board walls mouses in
+  g#start
 
 let _ =
   let game =
