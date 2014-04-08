@@ -111,14 +111,17 @@ class mouse dom pos dir = object(self)
     | R when lo dx -> Some (nx, ny)
     | _ -> None
 
-  method anim (g:game) =
+  method move_straight =
     let new_pos = update_pos dir pos in
-    self#move new_pos;
+    self#move new_pos
+
+  method anim ev_at =
+    self#move_straight;
     begin
       match self#act_tile with
       | None -> ()
       | Some (x, y) ->
-        match g#event_at x y dir with
+        match ev_at x y dir with
         | Some (Arrow d) -> self#turn_to d
         | Some Wall ->
             self#turn
@@ -127,13 +130,16 @@ class mouse dom pos dir = object(self)
 
 end
 
-and game board walls mouses = object(self)
+and game board walls = object(self)
   val board = board
   val walls = walls
-  val mouses = mouses
+  val mutable mouses = []
+
+  method add_mouse (m:mouse) =
+    mouses <- m::mouses
 
   method anim =
-    List.iter (fun m -> m#anim self) mouses
+    List.iter (fun m -> m#anim self#event_at) mouses
 
   method start =
     H.window##setInterval(Js.wrap_callback (fun () -> self#anim), 16.)
@@ -212,17 +218,13 @@ let start_game d =
   done;
   let logDiv = H.createPre H.document in
   Dom.appendChild d logDiv;
-  let m = mouse_spawn d (0., 2.) in
-  let mouses =
-    [ m
-    ]
-  in
   let walls =
     [ wall_create d (4, 2) R
     ; wall_create d (4, 4) D
     ]
   in
-  let g = new game board walls mouses in
+  let g = new game board walls in
+  g#add_mouse (mouse_spawn d (0., 2.));
   g#start
 
 let _ =
