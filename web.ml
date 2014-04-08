@@ -63,6 +63,10 @@ let mouse_exiting (x, y) dir =
 
 type arrow = (direction * H.divElement Js.t)
 
+type tile_event =
+  | Arrow of direction
+  | Wall
+
 class mouse dom pos dir = object(self)
 
   val dom = dom
@@ -114,15 +118,11 @@ class mouse dom pos dir = object(self)
       match self#act_tile with
       | None -> ()
       | Some (x, y) ->
-        match g#arrow_at x y with
-        | Some (d, _) -> self#turn_to d
-        | None ->
-          let wall_front = g#wall_at x y dir in
-          let wall_present =
-            wall_front || mouse_exiting (x, y) dir
-          in
-          if wall_present then
+        match g#event_at x y dir with
+        | Some (Arrow d) -> self#turn_to d
+        | Some Wall ->
             self#turn
+        | None -> ()
     end
 
 end
@@ -138,13 +138,21 @@ and game board walls mouses = object(self)
   method start =
     H.window##setInterval(Js.wrap_callback (fun () -> self#anim), 16.)
 
-  method arrow_at x y :arrow option=
-    board.(x).(y)
-
   method wall_at x y dir =
-    List.exists (fun w ->
-      (x, y) = w#get_pos && dir = w#get_dir
-    ) walls
+    List.exists (fun w -> w#is_at x y dir) walls
+
+  method event_at x y dir =
+    match board.(x).(y) with
+    | Some (d, _) -> Some (Arrow d)
+    | None ->
+      let wall_front = self#wall_at x y dir in
+      let wall_present =
+        wall_front || mouse_exiting (x, y) dir
+      in
+      if wall_present then
+        Some Wall
+      else
+        None
 end
 
 class wall dom (pos:int*int) (dir:direction) = object
@@ -152,8 +160,8 @@ class wall dom (pos:int*int) (dir:direction) = object
   val pos = pos
   val dir = dir
 
-  method get_pos = pos
-  method get_dir = dir
+  method is_at x y dirq =
+    pos = (x, y) && dir = dirq
 end
 
 let wall_create g pos dir =
