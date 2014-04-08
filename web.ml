@@ -29,11 +29,13 @@ type wall =
   ; w_dir: direction
   }
 
+type arrow = (direction * H.divElement Js.t)
+
 type game =
   { g_dom: H.divElement Js.t
   ; g_mouses: mouse list
   ; g_walls: wall list
-  ; g_board: direction option array array
+  ; g_board: arrow option array array
   ; g_log: string -> unit
   }
 
@@ -141,7 +143,7 @@ let mouse_anim g mouse =
     | None -> ()
     | Some (x, y) ->
       match g.g_board.(x).(y) with
-      | Some d -> mouse_turn_to mouse d
+      | Some (d, _) -> mouse_turn_to mouse d
       | None ->
         let wall_front = List.exists
           (fun w ->
@@ -172,16 +174,21 @@ let cell_setup c b i j =
   c##onclick <- H.handler (fun _ ->
     let d = match b.(i).(j) with
     | None -> U
-    | Some d -> dir_right d
+    | Some (dir, e) ->
+        begin
+          Dom.removeChild c e;
+          dir_right dir
+        end
     in
-    b.(i).(j) <- Some d;
-    let descr = function
-      | U -> "↑"
-      | D -> "↓"
-      | L -> "←"
-      | R -> "→"
+    let extraclass = match d with
+      | U -> "arrow-up"
+      | D -> "arrow-down"
+      | L -> "arrow-left"
+      | R -> "arrow-right"
     in
-    c##innerHTML <- js(descr d);
+    let e' = div_class ~extraclass "arrow" in
+    Dom.appendChild c e';
+    b.(i).(j) <- Some (d, e');
     Js._true
   )
 

@@ -50,7 +50,33 @@
     border-color: transparent transparent transparent red;
 }
 
+.arrow {
+    margin-left: 10px;
+    margin-top: 10px;
+    width: 0px;
+    height: 0px;
+    border-style: solid;
+}
 
+.arrow-up {
+    border-width: 0 20px 40px 20px;
+    border-color: transparent transparent blue transparent;
+}
+
+.arrow-down {
+    border-width: 40px 20px 0 20px;
+    border-color: blue transparent transparent transparent;
+}
+
+.arrow-left {
+    border-width: 20px 40px 20px 0;
+    border-color: transparent blue transparent transparent;
+}
+
+.arrow-right {
+    border-width: 20px 0 20px 40px;
+    border-color: transparent transparent transparent blue;
+}
 
 .wall {
     position: absolute;
