@@ -61,11 +61,18 @@ let mouse_exiting (x, y) dir =
   | L -> x = 0
   | R -> x = 7
 
-type arrow = (direction * H.divElement Js.t)
-
 type tile_event =
   | Arrow of direction
   | Wall
+
+class wall dom (pos:int*int) (dir:direction) = object
+  val dom = dom
+  val pos = pos
+  val dir = dir
+
+  method is_at x y dirq =
+    pos = (x, y) && dir = dirq
+end
 
 class mouse dom pos dir = object(self)
 
@@ -130,10 +137,10 @@ class mouse dom pos dir = object(self)
 
 end
 
-and game dom board walls = object(self)
+and game dom board = object(self)
   val dom = dom
   val board = board
-  val walls = walls
+  val mutable walls = []
   val mutable mouses = []
 
   method add_mouse pos =
@@ -143,6 +150,16 @@ and game dom board walls = object(self)
     m#move pos;
     Dom.appendChild dom d;
     mouses <- m::mouses
+
+  method add_wall pos dir =
+    let (x, y) = pos in
+    let fpos = (float x, float y) in
+    let extraclass = dirclass "wall" dir in
+    let d = div_class ~extraclass "wall" in
+    style_pos d fpos;
+    Dom.appendChild dom d;
+    let w = new wall d pos dir in
+    walls <- w::walls
 
   method anim =
     List.iter (fun m -> m#anim self#event_at) mouses
@@ -166,24 +183,6 @@ and game dom board walls = object(self)
       else
         None
 end
-
-class wall dom (pos:int*int) (dir:direction) = object
-  val dom = dom
-  val pos = pos
-  val dir = dir
-
-  method is_at x y dirq =
-    pos = (x, y) && dir = dirq
-end
-
-let wall_create g pos dir =
-  let (x, y) = pos in
-  let fpos = (float x, float y) in
-  let extraclass = dirclass "wall" dir in
-  let d = div_class ~extraclass "wall" in
-  style_pos d fpos;
-  Dom.appendChild g d;
-  new wall d pos dir
 
 let cell_setup c b i j =
   c##onclick <- H.handler (fun _ ->
@@ -216,13 +215,10 @@ let start_game d =
   done;
   let logDiv = H.createPre H.document in
   Dom.appendChild d logDiv;
-  let walls =
-    [ wall_create d (4, 2) R
-    ; wall_create d (4, 4) D
-    ]
-  in
-  let g = new game d board walls in
+  let g = new game d board in
   g#add_mouse (0., 2.);
+  g#add_wall (4, 2) R;
+  g#add_wall (4, 4) D;
   g#start
 
 let _ =
