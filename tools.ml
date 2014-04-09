@@ -27,3 +27,8 @@ let div_class ?extraclass c =
   let d = Dom_html.createDiv Dom_html.document in
   set_class d ?extraclass c;
   d
+
+let rec first_of = function
+  | [] -> invalid_arg "first_of"
+  | (Some _ as r)::_ -> r
+  | None::xs -> first_of xs

@@ -37,15 +37,17 @@ class game dom board = object(self)
     List.exists (fun w -> w#is_at x y dir) walls
 
   method event_at x y dir =
+    let arrow_present =
     match board.(x).(y) with
     | Some (d, _) -> Some (Arrow d)
-    | None ->
+    | None -> None
+    in
+    let wall_present =
       let wall_front = self#wall_at x y dir in
-      let wall_present =
-        wall_front || mouse_exiting (x, y) dir
-      in
-      if wall_present then
+      if wall_front || mouse_exiting (x, y) dir then
         Some Wall
       else
         None
+    in
+    first_of [arrow_present;wall_present]
 end
