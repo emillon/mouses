@@ -18,13 +18,7 @@ class game dom board = object(self)
     mouses <- m::mouses
 
   method add_wall pos dir =
-    let (x, y) = pos in
-    let fpos = (float x, float y) in
-    let extraclass = dirclass "wall" dir in
-    let d = div_class ~extraclass "wall" in
-    style_pos d fpos;
-    Dom.appendChild dom d;
-    let w = new wall d pos dir in
+    let w = new wall dom pos dir in
     walls <- w::walls
 
   method anim =

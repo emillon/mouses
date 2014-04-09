@@ -1,6 +1,13 @@
+open Tools
 open Types
 
-class wall dom (pos:int*int) (dir:direction) = object
+class wall parent pos dir =
+  let (x, y) = pos in
+  let extraclass = dirclass "wall" dir in
+  let dom = div_class ~extraclass "wall" in
+  let _ = style_pos dom (float x, float y) in
+  let _ = Dom.appendChild parent dom in
+object
   val dom = dom
   val pos = pos
   val dir = dir
