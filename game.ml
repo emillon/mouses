@@ -28,7 +28,7 @@ class game dom board = object(self)
     walls <- w::walls
 
   method anim =
-    List.iter (fun m -> m#anim self#event_at) mouses
+    List.iter (fun m -> m#anim self) mouses
 
   method start =
     Dom_html.window##setInterval(Js.wrap_callback (fun () -> self#anim), 16.)

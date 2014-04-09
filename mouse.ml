@@ -31,7 +31,7 @@ let round_x (x, y) =
 let round_y (x, y) =
   (x, round_near y)
 
-class mouse dom pos dir = object(self)
+class ['game] mouse dom pos dir = object(self)
 
   val dom = dom
 
@@ -79,13 +79,13 @@ class mouse dom pos dir = object(self)
     let new_pos = update_pos dir pos in
     self#move new_pos
 
-  method anim ev_at =
+  method anim (g:'game) =
     self#move_straight;
     begin
       match self#act_tile with
       | None -> ()
       | Some (x, y) ->
-        match ev_at x y dir with
+        match g#event_at x y dir with
         | Some (Arrow d) -> self#turn_to d
         | Some Wall ->
             self#turn
