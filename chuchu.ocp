@@ -5,6 +5,7 @@ begin program "chuchu"
         "tools.ml"
         "mouse.ml"
         "wall.ml"
+        "arrow.ml"
         "game.ml"
         "web.ml"
     ]

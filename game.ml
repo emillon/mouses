@@ -39,7 +39,7 @@ class game dom board = object(self)
   method event_at x y dir =
     let arrow_present =
     match board.(x).(y) with
-    | Some (d, _) -> Some (Arrow d)
+    | Some d -> Some (Arrow (d#dir))
     | None -> None
     in
     let wall_present =

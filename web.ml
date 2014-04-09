@@ -1,3 +1,4 @@
+open Arrow
 open Game
 open Mouse
 open Tools
@@ -10,16 +11,17 @@ let cell_setup c b i j =
   c##onclick <- H.handler (fun _ ->
     let d = match b.(i).(j) with
     | None -> U
-    | Some (dir, e) ->
+    | Some arrow ->
         begin
-          Dom.removeChild c e;
-          dir_right dir
+          arrow#detach c;
+          dir_right (arrow#dir)
         end
     in
     let extraclass = dirclass "arrow" d in
     let e' = div_class ~extraclass "arrow" in
+    let arr = new arrow e' d in
     Dom.appendChild c e';
-    b.(i).(j) <- Some (d, e');
+    b.(i).(j) <- Some arr;
     Js._true
   )
 
