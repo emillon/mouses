@@ -125,3 +125,7 @@
     background-color: #EF9E54;
     position: absolute;
 }
+
+.score {
+    float:left;
+}

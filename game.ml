@@ -7,6 +7,7 @@ open Types
 open Wall
 
 class game dom =
+  let score_div = div_class "score" in
 object(self)
   val dom = dom
   val mutable walls = []
@@ -15,11 +16,20 @@ object(self)
   val mutable sinks = []
   val mutable frames = 0
 
+  val mutable score = 0
+
   val arrows = Queue.create ()
 
   method add_mouse pos dir =
     let m = new mouse dom pos dir in
     mouses <- m::mouses
+
+  method update_score =
+    score_div##innerHTML <- js(Printf.sprintf "Score: %d" score)
+
+  method score_mouse_for p =
+    score <- score + 1;
+    self#update_score
 
   method remove_mouse m =
     mouses <- List.filter (fun m' -> m' <> m) mouses
@@ -57,7 +67,9 @@ object(self)
         Dom.appendChild row cell
       done;
       Dom.appendChild dom row
-    done
+    done;
+    Dom.appendChild dom score_div;
+    self#update_score
 
   method try_arrow cell pos =
     begin match self#arrow_at pos with
@@ -100,7 +112,7 @@ object(self)
     in
     let sink_present =
       if List.exists (fun s -> s#is_at x y) sinks then
-        Some Sink
+        Some (Sink ())
       else
         None
     in
