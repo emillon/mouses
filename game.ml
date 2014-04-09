@@ -6,7 +6,20 @@ open Tools
 open Types
 open Wall
 
-class game dom = object(self)
+let cell_setup g c i j =
+  c##onclick <- Dom_html.handler (fun _ ->
+    begin match g#arrow_at (i, j) with
+    | None -> g#add_arrow (new arrow c (i, j) U)
+    | Some arrow -> arrow#turn
+    end;
+    Js._true
+  );
+  c##onmousedown <- Dom_html.handler (fun e ->
+    Js._false
+  )
+
+class game dom =
+object(self)
   val dom = dom
   val mutable walls = []
   val mutable mouses = []
@@ -37,6 +50,18 @@ class game dom = object(self)
 
   method add_arrow (a:arrow) =
     arrows <- a::arrows
+
+  initializer
+    for i = 0 to 7 do
+      let row = div_class "row" in
+      for j = 0 to 7 do
+        let extraclass = if (i + j) mod 2 = 0 then "cell-even" else "cell-odd" in
+        let cell = div_class ~extraclass "cell" in
+        cell_setup self cell j i;
+        Dom.appendChild row cell
+      done;
+      Dom.appendChild dom row
+    done
 
   method anim =
     List.iter (fun s -> s#anim self) spawners;
