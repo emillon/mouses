@@ -1,12 +1,6 @@
 open Tools
 open Types
 
-let dir_right = function
-  | U -> R
-  | L -> U
-  | D -> L
-  | R -> D
-
 let update_pos dir (x, y) =
   let d = 0.05 in
   match dir with

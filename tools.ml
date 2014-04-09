@@ -32,3 +32,9 @@ let rec first_of = function
   | [] -> invalid_arg "first_of"
   | (Some _ as r)::_ -> r
   | None::xs -> first_of xs
+
+let dir_right = function
+  | U -> R
+  | L -> U
+  | D -> L
+  | R -> D

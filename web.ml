@@ -9,19 +9,17 @@ module H = Dom_html
 
 let cell_setup c b i j =
   c##onclick <- H.handler (fun _ ->
-    let d = match b.(i).(j) with
-    | None -> U
+    begin match b.(i).(j) with
+    | None ->
+      let dir = U in
+      let extraclass = dirclass "arrow" dir in
+      let dom = div_class ~extraclass "arrow" in
+      Dom.appendChild c dom;
+      let arr = new arrow dom dir in
+      b.(i).(j) <- Some arr
     | Some arrow ->
-        begin
-          arrow#detach c;
-          dir_right (arrow#dir)
-        end
-    in
-    let extraclass = dirclass "arrow" d in
-    let e' = div_class ~extraclass "arrow" in
-    let arr = new arrow e' d in
-    Dom.appendChild c e';
-    b.(i).(j) <- Some arr;
+        arrow#turn
+    end;
     Js._true
   )
 
