@@ -38,3 +38,19 @@ let dir_right = function
   | L -> U
   | D -> L
   | R -> D
+
+exception QF_found
+let queue_find p q =
+  let res = ref None in
+  begin
+    try
+      Queue.iter (fun x ->
+        if p x then
+          begin
+            res := Some x;
+            raise QF_found
+          end
+      ) q
+    with QF_found -> ()
+  end;
+  !res

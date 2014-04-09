@@ -6,18 +6,6 @@ open Tools
 open Types
 open Wall
 
-let cell_setup g c i j =
-  c##onclick <- Dom_html.handler (fun _ ->
-    begin match g#arrow_at (i, j) with
-    | None -> g#add_arrow (new arrow c (i, j) U)
-    | Some arrow -> arrow#turn
-    end;
-    Js._true
-  );
-  c##onmousedown <- Dom_html.handler (fun e ->
-    Js._false
-  )
-
 class game dom =
 object(self)
   val dom = dom
@@ -27,7 +15,7 @@ object(self)
   val mutable sinks = []
   val mutable frames = 0
 
-  val mutable arrows = []
+  val arrows = Queue.create ()
 
   method add_mouse pos dir =
     let m = new mouse dom pos dir in
@@ -48,20 +36,34 @@ object(self)
     let s = new sink dom pos in
     sinks <- s::sinks
 
-  method add_arrow (a:arrow) =
-    arrows <- a::arrows
+  method add_arrow cell pos =
+    let a = new arrow cell pos U in
+    Queue.add a arrows;
+    if Queue.length arrows > 4 then
+      let a_del = Queue.pop arrows in
+      a_del#detach
 
   initializer
-    for i = 0 to 7 do
+    for j = 0 to 7 do
       let row = div_class "row" in
-      for j = 0 to 7 do
+      for i = 0 to 7 do
         let extraclass = if (i + j) mod 2 = 0 then "cell-even" else "cell-odd" in
         let cell = div_class ~extraclass "cell" in
-        cell_setup self cell j i;
+        cell##onclick <- Dom_html.handler (fun _ ->
+          self#try_arrow cell (i, j);
+          Js._true
+        );
+        cell##onmousedown <- Dom_html.handler (fun e -> Js._false);
         Dom.appendChild row cell
       done;
       Dom.appendChild dom row
     done
+
+  method try_arrow cell pos =
+    begin match self#arrow_at pos with
+    | None -> self#add_arrow cell pos
+    | Some arrow -> arrow#turn
+    end
 
   method anim =
     List.iter (fun s -> s#anim self) spawners;
@@ -81,12 +83,7 @@ object(self)
     List.exists (fun w -> w#is_at x y dir) walls
 
   method arrow_at (x, y) =
-    try
-      let arr =
-        List.find (fun a -> a#is_at (x, y)) arrows
-      in
-      Some arr
-    with Not_found -> None
+    queue_find (fun a -> a#is_at (x, y)) arrows
 
   method event_at x y dir =
     let arrow_present =
