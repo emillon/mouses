@@ -1,3 +1,4 @@
+open Arrow
 open Mouse
 open Sink
 open Spawner
@@ -5,14 +6,15 @@ open Tools
 open Types
 open Wall
 
-class game dom board = object(self)
+class game dom = object(self)
   val dom = dom
-  val board = board
   val mutable walls = []
   val mutable mouses = []
   val mutable spawners = []
   val mutable sinks = []
   val mutable frames = 0
+
+  val mutable arrows = []
 
   method add_mouse pos dir =
     let m = new mouse dom pos dir in
@@ -33,6 +35,9 @@ class game dom board = object(self)
     let s = new sink dom pos in
     sinks <- s::sinks
 
+  method add_arrow (a:arrow) =
+    arrows <- a::arrows
+
   method anim =
     List.iter (fun s -> s#anim self) spawners;
     List.iter (fun m -> m#anim self) mouses
@@ -50,9 +55,17 @@ class game dom board = object(self)
   method wall_at x y dir =
     List.exists (fun w -> w#is_at x y dir) walls
 
+  method arrow_at (x, y) =
+    try
+      let arr =
+        List.find (fun a -> a#is_at (x, y)) arrows
+      in
+      Some arr
+    with Not_found -> None
+
   method event_at x y dir =
     let arrow_present =
-    match board.(x).(y) with
+    match self#arrow_at (x, y) with
     | Some d -> Some (Arrow (d#dir))
     | None -> None
     in
