@@ -83,27 +83,31 @@
 }
 
 .wall-left {
-    border-left: 2px solid green;
-    width: 58px;
+    width: 2px;
     height: 60px;
+    background-color: green;
+    margin-right: 58px;
 }
 
 .wall-right {
-    border-right: 2px solid green;
-    width: 58px;
+    width: 2px;
     height: 60px;
+    background-color: green;
+    margin-left: 58px;
 }
 
 .wall-down {
-    border-bottom: 2px solid green;
+    height: 2px;
     width: 60px;
-    height: 58px;
+    background-color: green;
+    margin-top: 58px;
 }
 
 .wall-up {
-    border-top: 2px solid green;
+    height: 2px;
     width: 60px;
-    height: 58px;
+    background-color: green;
+    margin-bottom: 58px;
 }
 
 .spawner {
