@@ -7,7 +7,6 @@ open Wall
 
 let start_game d =
   let g = new game d in
-  g#add_mouse (0., 2.) R;
   g#add_wall (4, 2) R;
   g#add_wall (4, 4) D;
   g#add_spawner (1, 1) R;

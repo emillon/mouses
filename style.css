@@ -50,6 +50,36 @@
     border-color: transparent transparent transparent red;
 }
 
+.cat {
+    position: absolute;
+    margin-top: 20px;
+    margin-left: 20px;
+
+    width: 0px;
+    height: 0px;
+    border-style: solid;
+}
+
+.cat-up {
+    border-width: 0 10px 20px 10px;
+    border-color: transparent transparent #0b514e transparent;
+}
+
+.cat-down {
+    border-width: 20px 10px 0 10px;
+    border-color: #0b514e transparent transparent transparent;
+}
+
+.cat-left {
+    border-width: 10px 20px 10px 0;
+    border-color: transparent #0b514e transparent transparent;
+}
+
+.cat-right {
+    border-width: 10px 0 10px 20px;
+    border-color: transparent transparent transparent #0b514e;
+}
+
 .arrow {
     margin-left: 10px;
     margin-top: 10px;

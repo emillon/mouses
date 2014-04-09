@@ -10,7 +10,10 @@ class ['game] spawner parent ipos (dir:direction) =
 object
   method anim (g:'game) =
     let f () =
-      g#add_mouse pos dir
+      let is_cat =
+        Random.float 1.0 < 0.05
+      in
+      g#add_mouse ~is_cat pos dir
     in
     g#every_nth_frame 10 f
 end

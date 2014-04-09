@@ -20,15 +20,18 @@ object(self)
 
   val arrows = Queue.create ()
 
-  method add_mouse pos dir =
-    let m = new mouse dom pos dir in
+  method add_mouse ~is_cat pos dir =
+    let m = new mouse is_cat dom pos dir in
     mouses <- m::mouses
 
   method update_score =
     score_div##innerHTML <- js(Printf.sprintf "Score: %d" score)
 
-  method score_mouse_for p =
-    score <- score + 1;
+  method score_mouse_for p is_cat =
+    if is_cat then
+      score <- score / 2
+    else
+      score <- score + 1;
     self#update_score
 
   method remove_mouse m =

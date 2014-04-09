@@ -25,9 +25,15 @@ let round_x (x, y) =
 let round_y (x, y) =
   (x, round_near y)
 
-class ['game] mouse parent pos dir =
-  let extraclass = dirclass "mouse" dir in
-  let dom = div_class ~extraclass "mouse" in
+class ['game] mouse is_cat parent pos dir =
+  let base =
+    if is_cat then
+      "cat"
+    else
+      "mouse"
+  in
+  let extraclass = dirclass base dir in
+  let dom = div_class ~extraclass base in
   let _ = style_pos dom pos in
   let _ = Dom.appendChild parent dom in
 object(self)
@@ -42,8 +48,8 @@ object(self)
     pos <- npos
 
   method update_class =
-    let extraclass = dirclass "mouse" dir in
-    set_class dom ~extraclass "mouse"
+    let extraclass = dirclass base dir in
+    set_class dom ~extraclass base
 
   method turn_to ndir =
     dir <- ndir;
@@ -93,7 +99,7 @@ object(self)
 
   method disappear g p =
     Dom.removeChild parent dom;
-    g#score_mouse_for p;
+    g#score_mouse_for p is_cat;
     g#remove_mouse self
 
 end
