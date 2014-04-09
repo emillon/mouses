@@ -14,6 +14,9 @@ let cell_setup c b i j =
     | Some arrow -> arrow#turn
     end;
     Js._true
+  );
+  c##onmousedown <- H.handler (fun e ->
+    Js._false
   )
 
 let start_game d =
