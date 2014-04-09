@@ -1,6 +1,10 @@
 begin program "chuchu"
     has_asm = false
-    files = ["web.ml"]
+    files = [
+        "types.ml"
+        "wall.ml"
+        "web.ml"
+    ]
     syntax = "js_of_ocaml.camlp4-syntax"
     requires = ["js_of_ocaml" "js_of_ocaml.camlp4-syntax"]
 end

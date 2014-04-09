@@ -1,3 +1,6 @@
+open Types
+open Wall
+
 module H = Dom_html
 let js = Js.string
 
@@ -12,10 +15,6 @@ let div_class ?extraclass c =
   let d = H.createDiv H.document in
   set_class d ?extraclass c;
   d
-
-type position = float * float
-
-type direction = U | D | L | R
 
 let dirclass base dir =
   let sfx = match dir with
@@ -64,15 +63,6 @@ let mouse_exiting (x, y) dir =
 type tile_event =
   | Arrow of direction
   | Wall
-
-class wall dom (pos:int*int) (dir:direction) = object
-  val dom = dom
-  val pos = pos
-  val dir = dir
-
-  method is_at x y dirq =
-    pos = (x, y) && dir = dirq
-end
 
 class mouse dom pos dir = object(self)
 
