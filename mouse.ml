@@ -25,7 +25,12 @@ let round_x (x, y) =
 let round_y (x, y) =
   (x, round_near y)
 
-class ['game] mouse dom pos dir = object(self)
+class ['game] mouse parent pos dir =
+  let extraclass = "mouse-right" in
+  let dom = div_class ~extraclass "mouse" in
+  let _ = style_pos dom pos in
+  let _ = Dom.appendChild parent dom in
+object(self)
 
   val dom = dom
 

@@ -10,11 +10,7 @@ class game dom board = object(self)
   val mutable mouses = []
 
   method add_mouse pos =
-    let extraclass = "mouse-right" in
-    let d = div_class ~extraclass "mouse" in
-    let m = new mouse d (0., 0.) R in
-    m#move pos;
-    Dom.appendChild dom d;
+    let m = new mouse dom pos R in
     mouses <- m::mouses
 
   method add_wall pos dir =
