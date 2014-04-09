@@ -1,4 +1,5 @@
 open Mouse
+open Sink
 open Spawner
 open Tools
 open Types
@@ -10,11 +11,15 @@ class game dom board = object(self)
   val mutable walls = []
   val mutable mouses = []
   val mutable spawners = []
+  val mutable sinks = []
   val mutable frames = 0
 
   method add_mouse pos dir =
     let m = new mouse dom pos dir in
     mouses <- m::mouses
+
+  method remove_mouse m =
+    mouses <- List.filter (fun m' -> m' <> m) mouses
 
   method add_wall pos dir =
     let w = new wall dom pos dir in
@@ -23,6 +28,10 @@ class game dom board = object(self)
   method add_spawner pos dir =
     let s = new spawner dom pos dir in
     spawners <- s::spawners
+
+  method add_sink pos =
+    let s = new sink dom pos in
+    sinks <- s::sinks
 
   method anim =
     List.iter (fun s -> s#anim self) spawners;
@@ -54,5 +63,11 @@ class game dom board = object(self)
       else
         None
     in
-    first_of [wall_present;arrow_present]
+    let sink_present =
+      if List.exists (fun s -> s#is_at x y) sinks then
+        Some Sink
+      else
+        None
+    in
+    first_of [wall_present;arrow_present;sink_present]
 end

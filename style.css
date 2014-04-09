@@ -113,3 +113,11 @@
     background-color: #B29AF5;
     position: absolute;
 }
+
+.sink {
+    margin: 15px;
+    width: 30px;
+    height: 30px;
+    background-color: #EF9E54;
+    position: absolute;
+}

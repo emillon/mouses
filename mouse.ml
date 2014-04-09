@@ -86,9 +86,13 @@ object(self)
       | Some (x, y) ->
         match g#event_at x y dir with
         | Some (Arrow d) -> self#turn_to d
-        | Some Wall ->
-            self#turn
+        | Some Wall -> self#turn
+        | Some Sink -> self#disappear g
         | None -> ()
     end
+
+  method disappear g =
+    Dom.removeChild parent dom;
+    g#remove_mouse self
 
 end
