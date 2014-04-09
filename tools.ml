@@ -29,7 +29,7 @@ let div_class ?extraclass c =
   d
 
 let rec first_of = function
-  | [] -> invalid_arg "first_of"
+  | [] -> None
   | (Some _ as r)::_ -> r
   | None::xs -> first_of xs
 

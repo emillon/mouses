@@ -31,9 +31,10 @@ let start_game d =
   let logDiv = H.createPre H.document in
   Dom.appendChild d logDiv;
   let g = new game d board in
-  g#add_mouse (0., 2.);
+  g#add_mouse (0., 2.) R;
   g#add_wall (4, 2) R;
   g#add_wall (4, 4) D;
+  g#add_spawner (1, 1) R;
   g#start
 
 let _ =

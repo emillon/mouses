@@ -105,3 +105,11 @@
     width: 60px;
     height: 58px;
 }
+
+.spawner {
+    margin: 15px;
+    width: 30px;
+    height: 30px;
+    background-color: #B29AF5;
+    position: absolute;
+}

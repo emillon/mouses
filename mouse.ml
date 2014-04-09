@@ -26,7 +26,7 @@ let round_y (x, y) =
   (x, round_near y)
 
 class ['game] mouse parent pos dir =
-  let extraclass = "mouse-right" in
+  let extraclass = dirclass "mouse" dir in
   let dom = div_class ~extraclass "mouse" in
   let _ = style_pos dom pos in
   let _ = Dom.appendChild parent dom in
