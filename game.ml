@@ -49,5 +49,5 @@ class game dom board = object(self)
       else
         None
     in
-    first_of [arrow_present;wall_present]
+    first_of [wall_present;arrow_present]
 end
