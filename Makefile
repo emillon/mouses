@@ -8,4 +8,4 @@ clean:
 	ocp-build -clean
 
 watch:
-	make ; while true ; do inotifywait -qe close_write *.ml; clear ; make ; echo OK ; done
+	make ; while true ; do inotifywait -qe close_write *.ml *.mli; clear ; make ; echo OK ; done
