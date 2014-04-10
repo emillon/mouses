@@ -13,3 +13,5 @@ val first_of : 'a option list -> 'a option
 val dir_right : Types.direction -> Types.direction
 
 val queue_find : ('a -> bool) -> 'a Queue.t -> 'a option
+
+val text_div : string -> Dom_html.element Js.t

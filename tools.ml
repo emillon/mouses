@@ -54,3 +54,8 @@ let queue_find p q =
     with QF_found -> ()
   end;
   !res
+
+let text_div text =
+  let dom = Dom_html.createDiv Dom_html.document in
+  dom##innerHTML <- js text;
+  dom

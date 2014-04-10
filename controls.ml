@@ -11,8 +11,12 @@ object(self)
     btn
 
   method private show_popup =
-    popup##innerHTML <- js"Controls";
-    popup##onclick <- Dom_html.handler (fun _ -> self#finish;Js._true);
+    popup##innerHTML <- js"";
+    let title = text_div "Controls" in
+    Dom.appendChild popup title;
+    let closeBtn = text_div "[X]" in
+    closeBtn##onclick <- Dom_html.handler (fun _ -> self#finish;Js._true);
+    Dom.appendChild popup closeBtn;
     Dom.appendChild parent popup
 
   method private finish =
