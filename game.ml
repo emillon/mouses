@@ -1,5 +1,6 @@
 open Arrow
 open Mouse
+open Controls
 open Sink
 open Spawner
 open Tools
@@ -72,7 +73,13 @@ object(self)
       Dom.appendChild dom row
     done;
     Dom.appendChild dom score_div;
-    self#update_score
+    self#update_score;
+    let c =
+      new controls dom
+        ~on_start:(fun () -> self#stop)
+        ~on_end:(fun () -> self#start)
+    in
+    Dom.appendChild dom (c#rebind_btn)
 
   method try_arrow cell pos =
     begin match self#arrow_at pos with
@@ -84,11 +91,22 @@ object(self)
     List.iter (fun s -> s#anim self) spawners;
     List.iter (fun m -> m#anim self) mouses
 
+  val mutable interval_id = None
+
   method start =
-    Dom_html.window##setInterval(Js.wrap_callback (fun () ->
+    let int_id = Dom_html.window##setInterval(Js.wrap_callback (fun () ->
       frames <- frames + 1;
       self#anim
-    ), 16.)
+    ), 16.) in
+    interval_id <- Some int_id
+
+  method stop =
+    match interval_id with
+    | None -> assert false
+    | Some i -> begin
+      Dom_html.window##clearInterval(i);
+      interval_id <- None
+    end
 
   method every_nth_frame n f =
     if frames mod n = 0 then

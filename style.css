@@ -159,3 +159,13 @@
 .score {
     float:left;
 }
+
+.controlwindow {
+    margin: auto;
+    height: 100px;
+    width: 200px;
+    background-color: #333;
+    color: #ddd;
+    padding: 10px;
+    border-radius: 5px;
+}

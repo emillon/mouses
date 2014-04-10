@@ -8,6 +8,7 @@ begin program "chuchu"
         "sink.ml"
         "spawner.ml"
         "arrow.ml"
+        "controls.ml"
         "game.ml"
         "web.ml"
     ]
