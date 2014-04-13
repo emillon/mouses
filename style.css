@@ -161,6 +161,7 @@
 }
 
 .controlwindow {
+    position: relative;
     margin: auto;
     height: 100px;
     width: 200px;
@@ -168,4 +169,10 @@
     color: #ddd;
     padding: 10px;
     border-radius: 5px;
+}
+
+.closebtn {
+    position: absolute;
+    top: 3px;
+    right: 3px;
 }

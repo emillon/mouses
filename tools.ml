@@ -55,7 +55,17 @@ let queue_find p q =
   end;
   !res
 
-let text_div text =
+let text_div ?cls text =
   let dom = Dom_html.createDiv Dom_html.document in
+  begin match cls with
+  | None -> ()
+  | Some c -> dom##className <- js c
+  end;
   dom##innerHTML <- js text;
   dom
+
+let handle f = Dom_html.handler (fun _ -> f (); Js._true)
+
+let on_click e f = e##onclick <- handle f
+let on_mousedown e f = e##onmousedown <- handle f
+let on_mouseup e f = e##onmouseup <- handle f
