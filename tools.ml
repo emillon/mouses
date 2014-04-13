@@ -1,5 +1,7 @@
 open Types
 
+exception Found
+
 let js = Js.string
 
 let style_pos d (x, y) =
@@ -39,21 +41,24 @@ let dir_right = function
   | D -> L
   | R -> D
 
-exception QF_found
-let queue_find p q =
+let x_find iter p q =
   let res = ref None in
   begin
     try
-      Queue.iter (fun x ->
+      iter (fun x ->
         if p x then
           begin
             res := Some x;
-            raise QF_found
+            raise Found
           end
       ) q
-    with QF_found -> ()
+    with Found -> ()
   end;
   !res
+
+let queue_find p x = x_find Queue.iter p x
+
+let array_find p x = x_find Array.iter p x
 
 let text_div ?cls text =
   let dom = Dom_html.createDiv Dom_html.document in

@@ -1,31 +1,77 @@
 open Tools
 
-class mouse_control parent =
-  let dom = div_class "mousecontrol" in
+let nplayers = 4
+let t_detect = 1000. (* milliseconds *)
+
+type control_type =
+  | Mouse
+
+class binder parent n =
+  let dom = div_class "binder" in
   let _ = Dom.appendChild parent dom in
 object(self)
+  val mutable control_type :control_type option = None
   val mutable timeout = None
+  val mutable bound = false
 
-  val t_detect = 1000. (* milliseconds *)
+  method private set_text t =
+    dom##innerHTML <- js t
 
-  method detect_start =
+  method private reset =
+    control_type <- None;
+    self#set_text (Printf.sprintf "P%d" n)
+
+  method settype ct =
+    control_type <- Some ct
+
+  method start =
     let tid = Dom_html.window##setTimeout(Js.wrap_callback(fun () ->
       self#detect_done
       ), t_detect)
     in
-    dom##innerHTML <- js"Press mouse...";
-    timeout <- Some tid
+    timeout <- Some tid;
+    self#set_text "Press mouse..."
 
-  method detect_end =
+  method onmouseup =
     begin match timeout with
     | None -> ()
     | Some tid ->
       Dom_html.window##clearTimeout(tid)
     end;
-    dom##innerHTML <- js""
+    if not bound then
+      self#reset
 
   method private detect_done =
-    dom##innerHTML<- js"OK!"
+    self#set_text "OK";
+    bound <- true
+
+  method available =
+    control_type = None
+
+  initializer
+    self#reset
+end
+
+class binder_list parent =
+  let dom = div_class "binder-list" in
+  let binders = Array.init nplayers (fun n -> new binder dom n) in
+  let _ = Dom.appendChild parent dom in
+object(self)
+  method start =
+    ()
+
+  method private first_avail =
+    match array_find (fun b -> b#available) binders with
+    | None -> failwith "first_avail: too many players"
+    | Some b -> b
+
+  method onmousedown =
+    let slot = self#first_avail in
+    slot#settype Mouse;
+    slot#start
+
+  method onmouseup =
+    Array.iter (fun b -> b#onmouseup) binders
 end
 
 class controls parent ~on_start ~on_end =
@@ -44,9 +90,9 @@ object(self)
     Dom.appendChild popup title;
     let closeBtn = text_div ~cls:"closebtn" "[X]" in
     on_click closeBtn (fun () -> self#finish);
-    let mc = new mouse_control popup in
-    on_mousedown Dom_html.window (fun () -> mc#detect_start);
-    on_mouseup Dom_html.window (fun () -> mc#detect_end);
+    let bl = new binder_list popup in
+    on_mousedown Dom_html.window (fun () -> bl#onmousedown);
+    on_mouseup Dom_html.window (fun () -> bl#onmouseup);
     Dom.appendChild popup closeBtn;
     Dom.appendChild parent popup
 
