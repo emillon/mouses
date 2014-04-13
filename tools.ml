@@ -74,3 +74,5 @@ let handle f = Dom_html.handler (fun _ -> f (); Js._true)
 let on_click e f = e##onclick <- handle f
 let on_mousedown e f = e##onmousedown <- handle f
 let on_mouseup e f = e##onmouseup <- handle f
+let on_keydown e f = e##onkeydown <- handle f
+let on_keyup e f = e##onkeyup <- handle f

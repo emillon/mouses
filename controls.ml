@@ -5,6 +5,12 @@ let t_detect = 1000. (* milliseconds *)
 
 type control_type =
   | Mouse
+  | Keyboard
+
+let p_ct () = function
+  | None -> assert false
+  | Some Mouse -> "mouse"
+  | Some Keyboard -> "keyboard"
 
 class binder parent n =
   let dom = div_class "binder" in
@@ -30,9 +36,9 @@ object(self)
       ), t_detect)
     in
     timeout <- Some tid;
-    self#set_text "Press mouse..."
+    self#set_text (Printf.sprintf "Press %a..." p_ct control_type)
 
-  method onmouseup =
+  method private event_reset =
     begin match timeout with
     | None -> ()
     | Some tid ->
@@ -40,6 +46,9 @@ object(self)
     end;
     if not bound then
       self#reset
+
+  method onmouseup = self#event_reset
+  method onkeyup = self#event_reset
 
   method private detect_done =
     self#set_text "OK";
@@ -65,13 +74,23 @@ object(self)
     | None -> failwith "first_avail: too many players"
     | Some b -> b
 
-  method onmousedown =
+  method private start_first ct =
     let slot = self#first_avail in
-    slot#settype Mouse;
+    slot#settype ct;
     slot#start
+
+  method onmousedown =
+    self#start_first Mouse
 
   method onmouseup =
     Array.iter (fun b -> b#onmouseup) binders
+
+  method onkeydown =
+    self#start_first Keyboard
+
+  method onkeyup =
+    Array.iter (fun b -> b#onkeyup) binders
+
 end
 
 class controls parent ~on_start ~on_end =
@@ -93,6 +112,8 @@ object(self)
     let bl = new binder_list popup in
     on_mousedown Dom_html.window (fun () -> bl#onmousedown);
     on_mouseup Dom_html.window (fun () -> bl#onmouseup);
+    on_keydown Dom_html.window (fun () -> bl#onkeydown);
+    on_keyup Dom_html.window (fun () -> bl#onkeyup);
     Dom.appendChild popup closeBtn;
     Dom.appendChild parent popup
 

@@ -19,7 +19,8 @@ val text_div : ?cls: string -> string -> Dom_html.element Js.t
 val on_click : #Dom_html.eventTarget Js.t -> (unit -> unit) -> unit
 
 val on_mousedown : #Dom_html.eventTarget Js.t -> (unit -> unit) -> unit
-
 val on_mouseup : #Dom_html.eventTarget Js.t -> (unit -> unit) -> unit
+val on_keyup : #Dom_html.eventTarget Js.t -> (unit -> unit) -> unit
+val on_keydown : #Dom_html.eventTarget Js.t -> (unit -> unit) -> unit
 
 val array_find : ('a -> bool) -> 'a array -> 'a option
