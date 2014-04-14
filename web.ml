@@ -10,6 +10,7 @@ let start_game d =
   g#add_wall (4, 2) R;
   g#add_wall (4, 4) D;
   g#add_spawner (1, 1) R;
+  g#add_spawner (1, 5) R;
   g#add_sink (7, 5);
   g#start
 

@@ -45,6 +45,17 @@ object(self)
     let s = new spawner dom pos dir in
     spawners <- s::spawners
 
+  method private select_spawner =
+    let l = List.length spawners in
+    if l > 0 then
+      let n = Random.int l in
+      list_iteri (fun i s ->
+        if i = n then
+          s#activate
+        else
+          s#deactivate
+      ) spawners
+
   method add_sink pos =
     let s = new sink dom pos in
     sinks <- s::sinks
@@ -81,6 +92,7 @@ object(self)
     end
 
   method anim =
+    self#every_nth_frame 100 (fun () -> self#select_spawner);
     List.iter (fun s -> s#anim self) spawners;
     List.iter (fun m -> m#anim self) mouses
 

@@ -54,3 +54,10 @@ let queue_find p q =
     with QF_found -> ()
   end;
   !res
+
+let list_iteri f l =
+  let i = ref 0 in
+  List.iter (fun x ->
+    f (!i) x;
+    incr i
+  ) l
