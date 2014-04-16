@@ -15,3 +15,5 @@ val dir_right : Types.direction -> Types.direction
 val queue_find : ('a -> bool) -> 'a Queue.t -> 'a option
 
 val list_iteri : (int -> 'a -> unit) -> 'a list -> unit
+
+val fromto : int -> int -> int list

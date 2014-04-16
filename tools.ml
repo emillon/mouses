@@ -61,3 +61,11 @@ let list_iteri f l =
     f (!i) x;
     incr i
   ) l
+
+let rec fromto l h =
+  if l = h then
+    [l]
+  else if l < h then
+    l::fromto (l+1) h
+  else
+    invalid_arg "fromto"

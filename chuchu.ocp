@@ -9,6 +9,7 @@ begin program "chuchu"
         "spawner.ml"
         "arrow.ml"
         "game.ml"
+        "parser.ml"
         "web.ml"
     ]
     syntax = "js_of_ocaml.camlp4-syntax"
