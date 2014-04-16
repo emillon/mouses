@@ -1,5 +1,7 @@
 open Types
 
+exception Found
+
 let js = Js.string
 
 let style_pos d (x, y) =
@@ -39,7 +41,6 @@ let dir_right = function
   | D -> L
   | R -> D
 
-exception QF_found
 let queue_find p q =
   let res = ref None in
   begin
@@ -48,10 +49,10 @@ let queue_find p q =
         if p x then
           begin
             res := Some x;
-            raise QF_found
+            raise Found
           end
       ) q
-    with QF_found -> ()
+    with Found -> ()
   end;
   !res
 
@@ -69,3 +70,19 @@ let rec fromto l h =
     l::fromto (l+1) h
   else
     invalid_arg "fromto"
+
+let list_find_opt f l =
+  let res = ref None in
+  begin
+    try
+      List.iter (fun x ->
+        match f x with
+        | Some y -> begin
+            res := Some y;
+            raise Found
+        end
+        | None -> ()
+      ) l
+    with Found -> ()
+  end;
+  !res

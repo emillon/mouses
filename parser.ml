@@ -13,19 +13,20 @@ let level_size img =
 type cell =
   | CEmpty
   | CSpawner
-  | CSink of int
+  | CSink of player
 
 let parse_cell = function
   | (0xff, 0xff, 0xff) -> CEmpty
   | (0x00, 0xff, 0xff) -> CSpawner
-  | (0x00, 0x00, 0xff) -> CSink 1
-  | (0xff, 0x00, 0x00) -> CSink 2
+  | (0x00, 0x00, 0xff) -> CSink P1
+  | (0xff, 0x00, 0x00) -> CSink P2
   | _ -> invalid_arg "parse_cell"
 
 let print_cell = function
   | CEmpty -> "."
   | CSpawner -> "X"
-  | CSink n -> string_of_int n
+  | CSink P1 -> "1"
+  | CSink P2 -> "2"
 
 let level_from_img img =
   let data = img##data in
@@ -108,7 +109,7 @@ let new_game d imgsrc k =
         match level.(j).(i) with
         | CEmpty -> ()
         | CSpawner -> g#add_spawner (i, j) R
-        | CSink _ -> g#add_sink (i, j)
+        | CSink n -> g#add_sink (i, j) n
       done
     done;
     k g

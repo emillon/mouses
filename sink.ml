@@ -1,6 +1,6 @@
 open Tools
 
-class sink parent ipos =
+class sink parent ipos (player:Types.player) =
   let dom = div_class "sink" in
   let (x, y) = ipos in
   let fpos = (float x, float y) in
@@ -9,5 +9,8 @@ class sink parent ipos =
 object
   val pos = ipos
   method is_at x y =
-    pos = (x, y)
+    if pos = (x, y) then
+      Some player
+    else
+      None
 end

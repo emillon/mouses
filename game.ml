@@ -56,8 +56,8 @@ object(self)
           s#deactivate
       ) spawners
 
-  method add_sink pos =
-    let s = new sink dom pos in
+  method add_sink pos player =
+    let s = new sink dom pos player in
     sinks <- s::sinks
 
   method add_arrow cell pos =
@@ -126,10 +126,9 @@ object(self)
         None
     in
     let sink_present =
-      if List.exists (fun s -> s#is_at x y) sinks then
-        Some (Sink ())
-      else
-        None
+      match list_find_opt (fun s -> s#is_at x y) sinks with
+      | Some p -> Some (Sink p)
+      | None -> None
     in
     first_of [wall_present;arrow_present;sink_present]
 end
