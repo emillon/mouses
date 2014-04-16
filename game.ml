@@ -16,7 +16,11 @@ object(self)
   val mutable sinks = []
   val mutable frames = 0
 
-  val mutable score = 0
+  val score = Hashtbl.create 2
+
+  initializer
+    Hashtbl.add score P1 0;
+    Hashtbl.add score P2 0
 
   val arrows = Queue.create ()
 
@@ -25,13 +29,20 @@ object(self)
     mouses <- m::mouses
 
   method update_score =
-    score_div##innerHTML <- js(Printf.sprintf "Score: %d" score)
+    let s1 = Hashtbl.find score P1 in
+    let s2 = Hashtbl.find score P2 in
+    let txt = Printf.sprintf "P1: %d P2: %d" s1 s2 in
+    score_div##innerHTML <- js txt
+
+  method private alter_score p f =
+    let s = Hashtbl.find score p in
+    Hashtbl.replace score p (f s)
 
   method score_mouse_for p is_cat =
     if is_cat then
-      score <- score / 2
+      self#alter_score p (fun s -> s/2)
     else
-      score <- score + 1;
+      self#alter_score p (fun s -> s+1);
     self#update_score
 
   method remove_mouse m =
