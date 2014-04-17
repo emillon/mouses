@@ -33,6 +33,7 @@ let level_from_img img =
   let width = img##width in
   let lw, lh = level_size img in
   let level = Array.make_matrix lw lh CEmpty in
+  let walls = ref [] in
   let pix (i, j) =
     let base = 4*(i*width+j) in
     let r = Dom_html.pixel_get data (base) in
@@ -55,7 +56,24 @@ let level_from_img img =
       level.(j).(i) <- get_cell i j
     done
   done;
-  level
+  let v_wall i j =
+    pix (3*i+3, 3*j+1) = (0, 0, 0)
+  in
+  let h_wall i j =
+    pix (3*i+1, 3*j+3) = (0, 0, 0)
+  in
+  let add_wall w =
+    walls := w::!walls
+  in
+  for i = 0 to lh - 1 do
+    for j = 0 to lw - 1 do
+      if i <> lh - 1 && v_wall i j then
+        add_wall ((i, j), (i+1, j));
+      if j <> lw - 1 && h_wall i j then
+        add_wall ((i, j), (i, j+1));
+    done
+  done;
+  (level, !walls)
 
 let print_level level =
   let lh = Array.length level in
@@ -78,8 +96,8 @@ let load_level imgsrc k =
     let ctx = can##getContext(Dom_html._2d_) in
     ctx##drawImage(img, 0., 0.);
     let img = ctx##getImageData(0., 0., 25., 25.) in
-    let level = level_from_img img in
-    k level;
+    let (level, walls) = level_from_img img in
+    k level walls;
     Js._true
   )
 
@@ -95,14 +113,22 @@ let debug_parse parent imgsrc =
     let img = ctx##getImageData(0., 0., 25., 25.) in
     Dom.appendChild parent can;
     let txt = Dom_html.createPre Dom_html.document in
-    let level = level_from_img img in
+    let level, _ = level_from_img img in (* TODO print walls *)
     txt##innerHTML <- js(print_level level);
     Dom.appendChild parent txt;
     Js._true
   )
 
+let from_pos (x1, y1) (x2, y2) =
+  let dx = x2 - x1 in
+  let dy = y2 - y1 in
+  match (dx, dy) with
+  | (1,0) -> (R, L)
+  | (0,1) -> (D, U)
+  | _ -> invalid_arg (Printf.sprintf "from_pos : diff = (%d,%d)" dx dy)
+
 let new_game d imgsrc k =
-  load_level imgsrc (fun level ->
+  load_level imgsrc (fun level walls ->
     let g = new game d in
     for j = 0 to 7 do
       for i = 0 to 7 do
@@ -112,5 +138,10 @@ let new_game d imgsrc k =
         | CSink n -> g#add_sink (i, j) n
       done
     done;
+    List.iter (fun (pos1, pos2) ->
+      let (d1, d2) = from_pos pos1 pos2 in
+      g#add_wall pos1 d1;
+      g#add_wall pos2 d2
+    ) walls;
     k g
   )
