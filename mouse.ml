@@ -91,9 +91,9 @@ object(self)
       | None -> ()
       | Some (x, y) ->
         match g#event_at x y dir with
-        | Some (Arrow d) -> self#turn_to d
+        | Some (Arrow a) -> self#turn_to (a#dir)
         | Some Wall -> self#turn
-        | Some (Sink p) -> self#disappear g p
+        | Some (Sink s) -> self#disappear g (s#player)
         | None -> ()
     end
 

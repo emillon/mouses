@@ -6,7 +6,7 @@ type player =
   | P1
   | P2
 
-type tile_event =
-  | Arrow of direction
+type ('sink, 'arrow) tile =
+  | Sink of 'sink
+  | Arrow of 'arrow
   | Wall
-  | Sink of player

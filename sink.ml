@@ -14,10 +14,5 @@ class sink parent ipos player =
   let _ = style_pos dom fpos in
   let _ = Dom.appendChild parent dom in
 object
-  val pos = ipos
-  method is_at x y =
-    if pos = (x, y) then
-      Some player
-    else
-      None
+  method player = player
 end

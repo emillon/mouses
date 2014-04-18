@@ -13,8 +13,9 @@ object(self)
   val mutable walls = []
   val mutable mouses = []
   val mutable spawners = []
-  val mutable sinks = []
   val mutable frames = 0
+
+  val board = Array.make_matrix 8 8 None
 
   val score = Hashtbl.create 2
 
@@ -69,10 +70,11 @@ object(self)
 
   method add_sink pos player =
     let s = new sink dom pos player in
-    sinks <- s::sinks
+    self#set pos (Some (Sink s))
 
   method add_arrow cell pos =
     let a = new arrow cell pos U in
+    self#set pos (Some (Arrow a));
     Queue.add a arrows;
     if Queue.length arrows > 4 then
       let a_del = Queue.pop arrows in
@@ -97,9 +99,10 @@ object(self)
     self#update_score
 
   method try_arrow cell pos =
-    begin match self#arrow_at pos with
+    begin match self#get pos with
+    | Some (Arrow arrow) -> arrow#turn
+    | Some _ -> ()
     | None -> self#add_arrow cell pos
-    | Some arrow -> arrow#turn
     end
 
   method anim =
@@ -120,15 +123,14 @@ object(self)
   method wall_at x y dir =
     List.exists (fun w -> w#is_at x y dir) walls
 
-  method arrow_at (x, y) =
-    queue_find (fun a -> a#is_at (x, y)) arrows
+  method private get (x, y) =
+    board.(y).(x)
+
+  method private set (x, y) v =
+    board.(y).(x) <- v
 
   method event_at x y dir =
-    let arrow_present =
-    match self#arrow_at (x, y) with
-    | Some d -> Some (Arrow (d#dir))
-    | None -> None
-    in
+    let ev = self#get (x, y) in
     let wall_present =
       let wall_front = self#wall_at x y dir in
       if wall_front || mouse_exiting (x, y) dir then
@@ -136,10 +138,5 @@ object(self)
       else
         None
     in
-    let sink_present =
-      match list_find_opt (fun s -> s#is_at x y) sinks with
-      | Some p -> Some (Sink p)
-      | None -> None
-    in
-    first_of [wall_present;arrow_present;sink_present]
+    first_of [wall_present;ev]
 end
