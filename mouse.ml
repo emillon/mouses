@@ -9,13 +9,6 @@ let pos_dir (x, y) = function
   | L -> (x - 1, y)
   | R -> (x + 1, y)
 
-let mouse_exiting (x, y) dir =
-  match dir with
-  | U -> y = 0
-  | D -> y = 7
-  | L -> x = 0
-  | R -> x = 7
-
 let round_near f =
   float (int_of_float (f +. 0.5))
 

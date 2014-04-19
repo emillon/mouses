@@ -6,6 +6,9 @@ open Tools
 open Types
 open Wall
 
+let oob (x, y) =
+  not (0 <= x && x <= 7 && 0 <= y && y <= 7)
+
 class game dom =
   let score_div = div_class "score" in
 object(self)
@@ -55,6 +58,7 @@ object(self)
 
   method add_spawner pos dir =
     let s = new spawner dom pos dir in
+    self#set pos (Some Spawner);
     spawners <- s::spawners
 
   method private select_spawner =
@@ -132,9 +136,18 @@ object(self)
   method private set (x, y) v =
     board.(y).(x) <- v
 
+  method private collidable pos0 d =
+    let pos = pos_dir pos0 d in
+    oob pos ||
+    match self#get pos with
+    | Some (Spawner) -> true
+    | Some (Arrow _) -> false
+    | Some (Sink _) -> false
+    | None -> false
+
   method mouse_act (x, y) dir =
     let bump d =
-      self#wall_at x y d || mouse_exiting (x, y) d
+      self#wall_at x y d || self#collidable (x, y) d
     in
     let adjust d0 =
       let d1 = dir_right d0 in
@@ -158,8 +171,9 @@ object(self)
       MA_Dir (adjust dir)
     else
     match self#get (x, y) with
-    | None -> MA_Dir (adjust dir)
     | Some (Arrow a) -> MA_Dir (adjust (a#dir))
     | Some (Sink s) -> MA_Sink (s#player)
+    | None
+    | Some Spawner -> MA_Dir (adjust dir)
 
 end

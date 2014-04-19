@@ -9,6 +9,7 @@ type player =
 type ('sink, 'arrow) tile =
   | Sink of 'sink
   | Arrow of 'arrow
+  | Spawner
 
 type mouse_act =
   | MA_Sink of player
