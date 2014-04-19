@@ -10,6 +10,8 @@ class arrow parent (pos:int*int) dir =
   val dom = dom
   val mutable dir = dir
 
+  method pos = pos
+
   method detach =
     Dom.removeChild parent dom;
 

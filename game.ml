@@ -77,8 +77,11 @@ object(self)
     self#set pos (Some (Arrow a));
     Queue.add a arrows;
     if Queue.length arrows > 4 then
-      let a_del = Queue.pop arrows in
-      a_del#detach
+      begin
+        let a_del = Queue.pop arrows in
+        a_del#detach;
+        self#set (a_del#pos) None (* TODO better: put coords in queue *)
+      end
 
   initializer
     for j = 0 to 7 do
@@ -139,4 +142,35 @@ object(self)
         None
     in
     first_of [wall_present;ev]
+
+  method mouse_act (x, y) dir =
+    let bump d =
+      self#wall_at x y d || mouse_exiting (x, y) d
+    in
+    let adjust d0 =
+      let d1 = dir_right d0 in
+      let d2 = dir_right d1 in
+      let d3 = dir_right d2 in
+      if (not (bump d0)) then
+        d0
+      else
+        if (not (bump d1)) then
+          d1
+        else
+          if (not (bump d2)) then
+            d2
+          else
+            if (not (bump d3)) then
+              d3
+            else
+              failwith "All directions bump"
+    in
+    if bump dir then
+      MA_Dir (adjust dir)
+    else
+    match self#get (x, y) with
+    | None -> MA_Dir (adjust dir)
+    | Some (Arrow a) -> MA_Dir (adjust (a#dir))
+    | Some (Sink s) -> MA_Sink (s#player)
+
 end

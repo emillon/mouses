@@ -12,19 +12,12 @@ let level_size img =
 
 type cell =
   | CEmpty
-  | CSpawner
+  | CSpawner of direction
   | CSink of player
-
-let parse_cell = function
-  | (0xff, 0xff, 0xff) -> CEmpty
-  | (0x00, 0xff, 0xff) -> CSpawner
-  | (0x00, 0x00, 0xff) -> CSink P1
-  | (0xff, 0x00, 0x00) -> CSink P2
-  | _ -> invalid_arg "parse_cell"
 
 let print_cell = function
   | CEmpty -> "."
-  | CSpawner -> "X"
+  | CSpawner _ -> "X"
   | CSink P1 -> "1"
   | CSink P2 -> "2"
 
@@ -45,11 +38,32 @@ let level_from_img img =
     (* transform cell number to pixel number *)
     (3*i+1, 3*j+1)
   in
+  let find_spawner_dir (bi, bj) =
+    let ok = function
+    | (0x00, 0xff, 0xff) -> true
+    | _ -> false
+    in
+    let pu = pix (bi, bj-1) in
+    let pd = pix (bi, bj+2) in
+    let pl = pix (bi-1, bj) in
+    let pr = pix (bi+2, bj) in
+    match () with
+    | _ when ok pu -> U
+    | _ when ok pd -> D
+    | _ when ok pl -> L
+    | _ when ok pr -> R
+    | _ -> invalid_arg "cannot find spawner dir"
+  in
   let get_cell j i =
-    (i, j)
-    |> coord
-    |> pix
-    |> parse_cell
+    let c = coord (i, j) in
+    match pix c with
+    | (0xff, 0xff, 0xff) -> CEmpty
+    | (0x00, 0x00, 0xff) -> CSink P1
+    | (0xff, 0x00, 0x00) -> CSink P2
+    | (0x00, 0xff, 0xff) ->
+      let dir = find_spawner_dir c in
+      CSpawner dir
+    | _ -> invalid_arg "parse_cell"
   in
   for i = 0 to lh - 1 do
     for j = 0 to lw - 1 do
@@ -134,7 +148,7 @@ let new_game d imgsrc k =
       for i = 0 to 7 do
         match level.(j).(i) with
         | CEmpty -> ()
-        | CSpawner -> g#add_spawner (i, j) R
+        | CSpawner d -> g#add_spawner (i, j) d
         | CSink n -> g#add_sink (i, j) n
       done
     done;

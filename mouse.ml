@@ -1,13 +1,13 @@
 open Tools
 open Types
 
-let update_pos dir (x, y) =
-  let d = 0.05 in
-  match dir with
-  | U -> (x, y -. d)
-  | D -> (x, y +. d)
-  | L -> (x -. d, y)
-  | R -> (x +. d, y)
+let frames_per_square = 16
+
+let pos_dir (x, y) = function
+  | U -> (x, y - 1)
+  | D -> (x, y + 1)
+  | L -> (x - 1, y)
+  | R -> (x + 1, y)
 
 let mouse_exiting (x, y) dir =
   match dir with
@@ -34,68 +34,76 @@ class ['game] mouse is_cat parent pos dir =
   in
   let extraclass = dirclass base dir in
   let dom = div_class ~extraclass base in
-  let _ = style_pos dom pos in
+  let (x, y) = pos in
+  let fpos = (float x, float y) in
+  let _ = style_pos dom fpos in
   let _ = Dom.appendChild parent dom in
 object(self)
 
   val dom = dom
 
+  (*
+   * A mouse's position is tracked by three things:
+   *
+   *   - pos is the last integer coordinates
+   *   - dest is the integer coordinates of destination
+   *   - delta is the number of frames in the movement between these
+   *
+   * Movement takes frames_per_square.
+   * When delta = frames_per_square, it is time to evaluate a new destination.
+   *
+   *)
+  val mutable dest = pos_dir pos dir
   val mutable pos = pos
-  val mutable dir = dir
+  val mutable delta = 0
 
-  method move npos =
-    style_pos dom npos;
-    pos <- npos
-
-  method update_class =
-    let extraclass = dirclass base dir in
+  method update_class d =
+    let extraclass = dirclass base d in
     set_class dom ~extraclass base
 
-  method turn_to ndir =
-    dir <- ndir;
-    self#update_class;
-    let new_pos =
-      match dir with
-      | U | D -> round_x pos
-      | L | R -> round_y pos
+  method dir =
+    let (x0, y0) = pos in
+    let (x1, y1) = dest in
+    let dx = x1-x0 in
+    let dy = y1-y0 in
+    match (dx, dy) with
+    | (1, 0) -> R
+    | (-1, 0) -> L
+    | (0, 1) -> D
+    | (0, -1) -> U
+    | _ -> invalid_arg (Printf.sprintf "mouse#dir: delta=(%d,%d)" dx dy)
+
+  method private reevaluate g =
+    match g#mouse_act dest (self#dir) with
+    | MA_Dir d ->
+        begin
+          self#update_class d;
+          delta <- 0;
+          pos <- dest;
+          dest <- pos_dir pos d
+        end
+    | MA_Sink player ->
+        self#disappear g (player)
+
+  method private interpolate_pos =
+    let (x0, y0) = pos in
+    let (x1, y1) = dest in
+    let fps = float frames_per_square in
+    let d = float delta in
+    let i a0 a1 = 
+      (float a0 *. (fps -. d) +. float a1 *. d) /. fps
     in
-    pos <- new_pos
+    (i x0 x1, i y0 y1)
 
-  method turn =
-    let new_dir = dir_right dir in
-    self#turn_to new_dir
-
-  method act_tile =
-    let (x, y) = pos in
-    let (dx, nfx) = modf (x +. 1.) in
-    let (dy, nfy) = modf (y +. 1.) in
-    let nx = int_of_float (nfx -. 1.) in
-    let ny = int_of_float (nfy -. 1.) in
-    let lo d = d < 0.5 in
-    let hi d = d >= 0.5 in
-    match dir with
-    | U when hi dy -> Some (nx, ny + 1)
-    | D when lo dy -> Some (nx, ny)
-    | L when hi dx -> Some (nx + 1, ny)
-    | R when lo dx -> Some (nx, ny)
-    | _ -> None
-
-  method move_straight =
-    let new_pos = update_pos dir pos in
-    self#move new_pos
+  method private move_straight =
+    let p = self#interpolate_pos in
+    style_pos dom p
 
   method anim (g:'game) =
+    delta <- delta + 1;
     self#move_straight;
-    begin
-      match self#act_tile with
-      | None -> ()
-      | Some (x, y) ->
-        match g#event_at x y dir with
-        | Some (Arrow a) -> self#turn_to (a#dir)
-        | Some Wall -> self#turn
-        | Some (Sink s) -> self#disappear g (s#player)
-        | None -> ()
-    end
+    if delta = frames_per_square then
+      self#reevaluate g
 
   method disappear g p =
     Dom.removeChild parent dom;

@@ -16,7 +16,7 @@ object
         let is_cat =
           Random.float 1.0 < 0.05
         in
-        g#add_mouse ~is_cat pos dir
+        g#add_mouse ~is_cat ipos dir
     in
     g#every_nth_frame 10 f
 
