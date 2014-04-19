@@ -17,6 +17,7 @@ object(self)
   val mutable mouses = []
   val mutable spawners = []
   val mutable frames = 0
+  val mutable interval_id = None
 
   val board = Array.make_matrix 8 8 None
 
@@ -118,10 +119,12 @@ object(self)
     List.iter (fun m -> m#anim self) mouses
 
   method start =
-    Dom_html.window##setInterval(Js.wrap_callback (fun () ->
+    let iid = Dom_html.window##setInterval(Js.wrap_callback (fun () ->
       frames <- frames + 1;
       self#anim
-    ), 16.)
+    ), 16.) in
+    assert (interval_id = None);
+    interval_id <- Some iid
 
   method every_nth_frame n f =
     if frames mod n = 0 then
@@ -176,4 +179,9 @@ object(self)
     | None
     | Some Spawner -> MA_Dir (adjust dir)
 
+  method destroy =
+    dom##innerHTML <- js "";
+    match interval_id with
+    | Some iid -> Dom_html.window##clearInterval(iid)
+    | None -> ()
 end

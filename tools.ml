@@ -86,3 +86,8 @@ let list_find_opt f l =
     with Found -> ()
   end;
   !res
+
+let getbyid_unsafe id =
+  Js.Opt.get
+    (Dom_html.document##getElementById (js id))
+    (fun () -> invalid_arg ("No such div : " ^ id))

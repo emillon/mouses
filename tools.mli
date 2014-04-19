@@ -19,3 +19,5 @@ val list_iteri : (int -> 'a -> unit) -> 'a list -> unit
 val fromto : int -> int -> int list
 
 val list_find_opt : ('a -> 'b option) -> 'a list -> 'b option
+
+val getbyid_unsafe : string -> Dom_html.element Js.t
