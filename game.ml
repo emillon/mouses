@@ -132,17 +132,6 @@ object(self)
   method private set (x, y) v =
     board.(y).(x) <- v
 
-  method event_at x y dir =
-    let ev = self#get (x, y) in
-    let wall_present =
-      let wall_front = self#wall_at x y dir in
-      if wall_front || mouse_exiting (x, y) dir then
-        Some Wall
-      else
-        None
-    in
-    first_of [wall_present;ev]
-
   method mouse_act (x, y) dir =
     let bump d =
       self#wall_at x y d || mouse_exiting (x, y) d

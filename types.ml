@@ -9,7 +9,6 @@ type player =
 type ('sink, 'arrow) tile =
   | Sink of 'sink
   | Arrow of 'arrow
-  | Wall
 
 type mouse_act =
   | MA_Sink of player
