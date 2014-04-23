@@ -100,28 +100,27 @@ let print_level level =
   in
   String.concat "\n" (List.map p_line (fromto 0 (lh-1)))
 
-let load_level imgsrc k =
+let load_level imgsrc =
+  let open Lwt in
   let img = Dom_html.createImg Dom_html.document in
   img##src <- js imgsrc;
-  img##onload <- Dom_html.handler (fun _ ->
-    let can = Dom_html.createCanvas Dom_html.document in
-    can##width <- 25;
-    can##height <- 25;
-    let ctx = can##getContext(Dom_html._2d_) in
-    ctx##drawImage(img, 0., 0.);
-    let img = ctx##getImageData(0., 0., 25., 25.) in
-    let (level, walls) = level_from_img img in
-    k level walls;
-    Js._true
-  )
+  Lwt_js_events.load img >>= fun _ ->
+  let can = Dom_html.createCanvas Dom_html.document in
+  can##width <- 25;
+  can##height <- 25;
+  let ctx = can##getContext(Dom_html._2d_) in
+  ctx##drawImage(img, 0., 0.);
+  let img = ctx##getImageData(0., 0., 25., 25.) in
+  return (level_from_img img)
 
 let debug_parse parent imgsrc =
+  let open Lwt in
   let txt = Dom_html.createPre Dom_html.document in
-  load_level imgsrc (fun level walls ->
-    (* TODO print walls *)
-    txt##innerHTML <- js(print_level level);
-    Dom.appendChild parent txt;
-  )
+  load_level imgsrc >>= fun (level, walls) ->
+  (* TODO print walls *)
+  txt##innerHTML <- js(print_level level);
+  Dom.appendChild parent txt;
+  return ()
 
 let from_pos (x1, y1) (x2, y2) =
   let dx = x2 - x1 in
@@ -131,8 +130,9 @@ let from_pos (x1, y1) (x2, y2) =
   | (0,1) -> (D, U)
   | _ -> invalid_arg (Printf.sprintf "from_pos : diff = (%d,%d)" dx dy)
 
-let new_game d imgsrc k =
-  load_level imgsrc (fun level walls ->
+let new_game d imgsrc =
+  let open Lwt in
+  load_level imgsrc >>= (fun (level, walls) ->
     let g = new game d in
     for j = 0 to 7 do
       for i = 0 to 7 do
@@ -147,5 +147,5 @@ let new_game d imgsrc k =
       g#add_wall pos1 d1;
       g#add_wall pos2 d2
     ) walls;
-    k g
+    return g
   )
