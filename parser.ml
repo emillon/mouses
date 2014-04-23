@@ -116,21 +116,11 @@ let load_level imgsrc k =
   )
 
 let debug_parse parent imgsrc =
-  let img = Dom_html.createImg Dom_html.document in
-  img##src <- js imgsrc;
-  img##onload <- Dom_html.handler (fun _ ->
-    let can = Dom_html.createCanvas Dom_html.document in
-    can##width <- 25;
-    can##height <- 25;
-    let ctx = can##getContext(Dom_html._2d_) in
-    ctx##drawImage(img, 0., 0.);
-    let img = ctx##getImageData(0., 0., 25., 25.) in
-    Dom.appendChild parent can;
-    let txt = Dom_html.createPre Dom_html.document in
-    let level, _ = level_from_img img in (* TODO print walls *)
+  let txt = Dom_html.createPre Dom_html.document in
+  load_level imgsrc (fun level walls ->
+    (* TODO print walls *)
     txt##innerHTML <- js(print_level level);
     Dom.appendChild parent txt;
-    Js._true
   )
 
 let from_pos (x1, y1) (x2, y2) =
