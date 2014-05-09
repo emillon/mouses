@@ -156,19 +156,12 @@ object(self)
       let d1 = dir_right d0 in
       let d2 = dir_right d1 in
       let d3 = dir_right d2 in
-      if (not (bump d0)) then
-        d0
-      else
-        if (not (bump d1)) then
-          d1
-        else
-          if (not (bump d2)) then
-            d2
-          else
-            if (not (bump d3)) then
-              d3
-            else
-              failwith "All directions bump"
+      match () with
+      | _ when (not (bump d0)) -> d0
+      | _ when (not (bump d1)) -> d1
+      | _ when (not (bump d2)) -> d2
+      | _ when (not (bump d3)) -> d3
+      | _ -> failwith "All directions bump"
     in
     if bump dir then
       MA_Dir (adjust dir)
