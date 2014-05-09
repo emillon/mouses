@@ -76,3 +76,56 @@ let on_mousedown e f = e##onmousedown <- handle f
 let on_mouseup e f = e##onmouseup <- handle f
 let on_keydown e f = e##onkeydown <- handle f
 let on_keyup e f = e##onkeyup <- handle f
+
+let list_iteri f l =
+  let i = ref 0 in
+  List.iter (fun x ->
+    f (!i) x;
+    incr i
+  ) l
+
+let rec fromto l h =
+  if l = h then
+    [l]
+  else if l < h then
+    l::fromto (l+1) h
+  else
+    invalid_arg "fromto"
+
+let list_find_opt f l =
+  let res = ref None in
+  begin
+    try
+      List.iter (fun x ->
+        match f x with
+        | Some y -> begin
+            res := Some y;
+            raise Found
+        end
+        | None -> ()
+      ) l
+    with Found -> ()
+  end;
+  !res
+
+let getbyid_unsafe id =
+  Js.Opt.get
+    (Dom_html.document##getElementById (js id))
+    (fun () -> invalid_arg ("No such div : " ^ id))
+
+let get_body () =
+  let nl = Dom_html.document##getElementsByTagName (js"body") in
+  Js.Opt.get (nl##item(0)) (fun () -> failwith "get_body")
+
+let pos_dir (x, y) = function
+  | U -> (x, y - 1)
+  | D -> (x, y + 1)
+  | L -> (x - 1, y)
+  | R -> (x + 1, y)
+
+let init_matrix h w f =
+  Array.init h (fun j ->
+    Array.init w (fun i ->
+      f i j
+    )
+  )

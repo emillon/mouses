@@ -5,8 +5,7 @@
 .cell {
     width: 60px;
     height: 60px;
-    float: left;
-}
+    float: left; }
 
 .cell-even {
     background-color: #ddd;
@@ -154,10 +153,33 @@
     height: 30px;
     background-color: #EF9E54;
     position: absolute;
+    text-align: center;
+}
+
+.sink-player {
+    margin: 10px;
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+}
+
+.sink-player1 {
+    background-color: blue;
+}
+
+.sink-player2 {
+    background-color: red;
 }
 
 .score {
     float:left;
+}
+
+.cursor {
+    width: 54px;
+    height: 54px;
+    border: 3px solid blue;
+    position: absolute;
 }
 
 .controlwindow {

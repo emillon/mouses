@@ -1,4 +1,5 @@
 open Arrow
+open Cursor
 open Mouse
 open Controls
 open Sink
@@ -14,10 +15,16 @@ object(self)
   val mutable walls = []
   val mutable mouses = []
   val mutable spawners = []
-  val mutable sinks = []
   val mutable frames = 0
+  val mutable interval_id = None
 
-  val mutable score = 0
+  val board = Array.make_matrix 8 8 None
+
+  val score = Hashtbl.create 2
+
+  initializer
+    Hashtbl.add score P1 0;
+    Hashtbl.add score P2 0
 
   val arrows = Queue.create ()
 
@@ -26,13 +33,20 @@ object(self)
     mouses <- m::mouses
 
   method update_score =
-    score_div##innerHTML <- js(Printf.sprintf "Score: %d" score)
+    let s1 = Hashtbl.find score P1 in
+    let s2 = Hashtbl.find score P2 in
+    let txt = Printf.sprintf "P1: %d P2: %d" s1 s2 in
+    score_div##innerHTML <- js txt
+
+  method private alter_score p f =
+    let s = Hashtbl.find score p in
+    Hashtbl.replace score p (f s)
 
   method score_mouse_for p is_cat =
     if is_cat then
-      score <- score / 2
+      self#alter_score p (fun s -> s/2)
     else
-      score <- score + 1;
+      self#alter_score p (fun s -> s+1);
     self#update_score
 
   method remove_mouse m =
@@ -44,34 +58,61 @@ object(self)
 
   method add_spawner pos dir =
     let s = new spawner dom pos dir in
+    self#set pos (Some Spawner);
     spawners <- s::spawners
 
-  method add_sink pos =
-    let s = new sink dom pos in
-    sinks <- s::sinks
+  method private select_spawner =
+    let l = List.length spawners in
+    if l > 0 then
+      let n = Random.int l in
+      list_iteri (fun i s ->
+        if i = n then
+          s#activate
+        else
+          s#deactivate
+      ) spawners
 
-  method add_arrow cell pos =
-    let a = new arrow cell pos U in
+  method add_sink pos player =
+    let s = new sink dom pos player in
+    self#set pos (Some (Sink s))
+
+  val cells = init_matrix 8 8 (fun i j ->
+    let extraclass = if (i + j) mod 2 = 0 then "cell-even" else "cell-odd" in
+    div_class ~extraclass "cell"
+  )
+
+  method oob (x, y) =
+    not (0 <= x && x <= 7 && 0 <= y && y <= 7)
+
+  method try_arrow pos dir =
+    match self#get pos with
+    | Some _ -> ()
+    | None -> self#add_arrow pos dir
+
+  method add_arrow pos dir =
+    let (i, j) = pos in
+    let cell = cells.(j).(i) in
+    let a = new arrow cell pos dir in
+    self#set pos (Some (Arrow a));
     Queue.add a arrows;
     if Queue.length arrows > 4 then
-      let a_del = Queue.pop arrows in
-      a_del#detach
+      begin
+        let a_del = Queue.pop arrows in
+        a_del#detach;
+        self#set (a_del#pos) None (* TODO better: put coords in queue *)
+      end
 
   initializer
     for j = 0 to 7 do
       let row = div_class "row" in
       for i = 0 to 7 do
-        let extraclass = if (i + j) mod 2 = 0 then "cell-even" else "cell-odd" in
-        let cell = div_class ~extraclass "cell" in
-        cell##onclick <- Dom_html.handler (fun _ ->
-          self#try_arrow cell (i, j);
-          Js._true
-        );
+        let cell = cells.(j).(i) in
         cell##onmousedown <- Dom_html.handler (fun e -> Js._false);
         Dom.appendChild row cell
       done;
       Dom.appendChild dom row
     done;
+    let _ = new cursor dom self (0, 0) in
     Dom.appendChild dom score_div;
     self#update_score;
     let c =
@@ -81,24 +122,18 @@ object(self)
     in
     Dom.appendChild dom (c#rebind_btn)
 
-  method try_arrow cell pos =
-    begin match self#arrow_at pos with
-    | None -> self#add_arrow cell pos
-    | Some arrow -> arrow#turn
-    end
-
   method anim =
+    self#every_nth_frame 100 (fun () -> self#select_spawner);
     List.iter (fun s -> s#anim self) spawners;
     List.iter (fun m -> m#anim self) mouses
 
-  val mutable interval_id = None
-
   method start =
-    let int_id = Dom_html.window##setInterval(Js.wrap_callback (fun () ->
+    let iid = Dom_html.window##setInterval(Js.wrap_callback (fun () ->
       frames <- frames + 1;
       self#anim
     ), 16.) in
-    interval_id <- Some int_id
+    assert (interval_id = None);
+    interval_id <- Some iid
 
   method stop =
     match interval_id with
@@ -115,27 +150,48 @@ object(self)
   method wall_at x y dir =
     List.exists (fun w -> w#is_at x y dir) walls
 
-  method arrow_at (x, y) =
-    queue_find (fun a -> a#is_at (x, y)) arrows
+  method private get (x, y) =
+    board.(y).(x)
 
-  method event_at x y dir =
-    let arrow_present =
-    match self#arrow_at (x, y) with
-    | Some d -> Some (Arrow (d#dir))
-    | None -> None
+  method private set (x, y) v =
+    board.(y).(x) <- v
+
+  method private collidable pos0 d =
+    let pos = pos_dir pos0 d in
+    self#oob pos ||
+    match self#get pos with
+    | Some (Spawner) -> true
+    | Some (Arrow _) -> false
+    | Some (Sink _) -> false
+    | None -> false
+
+  method mouse_act (x, y) dir =
+    let bump d =
+      self#wall_at x y d || self#collidable (x, y) d
     in
-    let wall_present =
-      let wall_front = self#wall_at x y dir in
-      if wall_front || mouse_exiting (x, y) dir then
-        Some Wall
-      else
-        None
+    let adjust d0 =
+      let d1 = dir_right d0 in
+      let d2 = dir_right d1 in
+      let d3 = dir_right d2 in
+      match () with
+      | _ when (not (bump d0)) -> d0
+      | _ when (not (bump d1)) -> d1
+      | _ when (not (bump d2)) -> d2
+      | _ when (not (bump d3)) -> d3
+      | _ -> failwith "All directions bump"
     in
-    let sink_present =
-      if List.exists (fun s -> s#is_at x y) sinks then
-        Some (Sink ())
-      else
-        None
-    in
-    first_of [wall_present;arrow_present;sink_present]
+    if bump dir then
+      MA_Dir (adjust dir)
+    else
+    match self#get (x, y) with
+    | Some (Arrow a) -> MA_Dir (adjust (a#dir))
+    | Some (Sink s) -> MA_Sink (s#player)
+    | None
+    | Some Spawner -> MA_Dir (adjust dir)
+
+  method destroy =
+    dom##innerHTML <- js "";
+    match interval_id with
+    | Some iid -> Dom_html.window##clearInterval(iid)
+    | None -> ()
 end
