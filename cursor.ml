@@ -26,7 +26,7 @@ object(self)
 
   initializer begin
     style_pos dom (float_pos pos);
-    Dom.appendChild parent dom; Firebug.console##log (js"setup cur");
+    Dom.appendChild parent dom;
     Dom_html.document##onkeydown <- Dom_html.handler (fun ev ->
       begin match parse_keycode (ev##keyCode) with
       | None -> ()
