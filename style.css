@@ -179,6 +179,6 @@
 .cursor {
     width: 54px;
     height: 54px;
-    border: 3px solid red;
+    border: 3px solid blue;
     position: absolute;
 }
