@@ -1,6 +1,6 @@
 open Tools
 
-let nplayers = 4
+let nplayers = 2
 let t_detect = 1000. (* milliseconds *)
 
 type control_type =
