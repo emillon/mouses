@@ -1,13 +1,11 @@
 open Arrow
+open Cursor
 open Mouse
 open Sink
 open Spawner
 open Tools
 open Types
 open Wall
-
-let oob (x, y) =
-  not (0 <= x && x <= 7 && 0 <= y && y <= 7)
 
 class game dom =
   let score_div = div_class "score" in
@@ -77,8 +75,23 @@ object(self)
     let s = new sink dom pos player in
     self#set pos (Some (Sink s))
 
-  method add_arrow cell pos =
-    let a = new arrow cell pos U in
+  val cells = init_matrix 8 8 (fun i j ->
+    let extraclass = if (i + j) mod 2 = 0 then "cell-even" else "cell-odd" in
+    div_class ~extraclass "cell"
+  )
+
+  method oob (x, y) =
+    not (0 <= x && x <= 7 && 0 <= y && y <= 7)
+
+  method try_arrow pos dir =
+    match self#get pos with
+    | Some _ -> ()
+    | None -> self#add_arrow pos dir
+
+  method add_arrow pos dir =
+    let (i, j) = pos in
+    let cell = cells.(j).(i) in
+    let a = new arrow cell pos dir in
     self#set pos (Some (Arrow a));
     Queue.add a arrows;
     if Queue.length arrows > 4 then
@@ -92,26 +105,15 @@ object(self)
     for j = 0 to 7 do
       let row = div_class "row" in
       for i = 0 to 7 do
-        let extraclass = if (i + j) mod 2 = 0 then "cell-even" else "cell-odd" in
-        let cell = div_class ~extraclass "cell" in
-        cell##onclick <- Dom_html.handler (fun _ ->
-          self#try_arrow cell (i, j);
-          Js._true
-        );
+        let cell = cells.(j).(i) in
         cell##onmousedown <- Dom_html.handler (fun e -> Js._false);
         Dom.appendChild row cell
       done;
       Dom.appendChild dom row
     done;
+    let _ = new cursor dom self (0, 0) in
     Dom.appendChild dom score_div;
     self#update_score
-
-  method try_arrow cell pos =
-    begin match self#get pos with
-    | Some (Arrow arrow) -> arrow#turn
-    | Some _ -> ()
-    | None -> self#add_arrow cell pos
-    end
 
   method anim =
     self#every_nth_frame 100 (fun () -> self#select_spawner);
@@ -141,7 +143,7 @@ object(self)
 
   method private collidable pos0 d =
     let pos = pos_dir pos0 d in
-    oob pos ||
+    self#oob pos ||
     match self#get pos with
     | Some (Spawner) -> true
     | Some (Arrow _) -> false

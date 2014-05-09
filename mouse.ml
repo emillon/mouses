@@ -3,12 +3,6 @@ open Types
 
 let frames_per_square = 16
 
-let pos_dir (x, y) = function
-  | U -> (x, y - 1)
-  | D -> (x, y + 1)
-  | L -> (x - 1, y)
-  | R -> (x + 1, y)
-
 let round_near f =
   float (int_of_float (f +. 0.5))
 

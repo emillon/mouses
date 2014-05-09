@@ -95,3 +95,16 @@ let getbyid_unsafe id =
 let get_body () =
   let nl = Dom_html.document##getElementsByTagName (js"body") in
   Js.Opt.get (nl##item(0)) (fun () -> failwith "get_body")
+
+let pos_dir (x, y) = function
+  | U -> (x, y - 1)
+  | D -> (x, y + 1)
+  | L -> (x - 1, y)
+  | R -> (x + 1, y)
+
+let init_matrix h w f =
+  Array.init h (fun j ->
+    Array.init w (fun i ->
+      f i j
+    )
+  )

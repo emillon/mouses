@@ -23,3 +23,7 @@ val list_find_opt : ('a -> 'b option) -> 'a list -> 'b option
 val getbyid_unsafe : string -> Dom_html.element Js.t
 
 val get_body : unit -> Dom_html.bodyElement Js.t
+
+val pos_dir : (int * int) -> Types.direction -> (int * int)
+
+val init_matrix : int -> int -> (int -> int -> 'a) -> 'a array array
