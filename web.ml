@@ -11,15 +11,16 @@ let level_url name =
 let game = ref None
 
 let start_game dom level_name =
+  let open Lwt in
   begin match !game with
   | Some old_g -> old_g#destroy
   | None -> ()
   end;
   let fn = level_url level_name in
-  Parser.new_game dom fn (fun g ->
-    game := Some g;
-    g#start
-  )
+  Parser.new_game dom fn >>= fun g ->
+  game := Some g;
+  g#start;
+  return ()
 
 let level_list = ["01" ; "02"]
 
@@ -29,7 +30,7 @@ let build_level_list dom game =
     let url = level_url l in
     img##src <- js url;
     img##onclick <- Dom_html.handler (fun _ ->
-      start_game game l;
+      let _ = start_game game l in
       Js._true
     );
     Dom.appendChild dom img
