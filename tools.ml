@@ -91,3 +91,7 @@ let getbyid_unsafe id =
   Js.Opt.get
     (Dom_html.document##getElementById (js id))
     (fun () -> invalid_arg ("No such div : " ^ id))
+
+let get_body () =
+  let nl = Dom_html.document##getElementsByTagName (js"body") in
+  Js.Opt.get (nl##item(0)) (fun () -> failwith "get_body")
