@@ -8,9 +8,10 @@ open Types
 open Wall
 
 let first_gp gps =
-  Js.Optdef.get
+  Js.Optdef.case
     (Js.array_get gps 0)
-    (fun () -> invalid_arg "gp_state_from_gamepads")
+    (fun () -> None)
+    (fun x -> Some x)
 
 let gp_state_from_gamepads (gp:'a Js.t) =
   { gp_ts = gp##timestamp
@@ -31,13 +32,15 @@ class gamepad_watch = object(self)
   val mutable notify_func = None
 
   method reload =
-    let gps = Gamepad.getGamepads () in
-    let gp = first_gp gps in
-    let new_state = gp_state_from_gamepads gp in
-    begin if state.gp_ts <> new_state.gp_ts then
-      self#fire new_state
-    end;
-    state <- new_state
+    match first_gp (Gamepad.getGamepads ()) with
+    | None -> ()
+    | Some gp -> begin
+      let new_state = gp_state_from_gamepads gp in
+      begin if state.gp_ts <> new_state.gp_ts then
+        self#fire new_state
+      end;
+      state <- new_state
+    end
 
   method subscribe f =
     assert (notify_func = None);
