@@ -60,7 +60,7 @@ object(self)
         let new_pos = pos_dir pos d in
         if not (game#oob new_pos) then
           self#move new_pos
-    | ActArrow d -> game#try_arrow pos d
+    | ActArrow d -> game#try_arrow pos d player
 
   method move dst =
     pos <- dst;

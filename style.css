@@ -90,22 +90,62 @@
 
 .arrow-up {
     border-width: 0 20px 40px 20px;
-    border-color: transparent transparent blue transparent;
+    border-top-color: transparent;
+    border-right-color: transparent;
+    border-left-color: transparent;
+}
+
+.arrow-up.arrow-player1 {
+    border-bottom-color: blue;
+}
+
+.arrow-up.arrow-player2 {
+    border-bottom-color: red;
 }
 
 .arrow-down {
     border-width: 40px 20px 0 20px;
-    border-color: blue transparent transparent transparent;
+    border-right-color: transparent;
+    border-bottom-color: transparent;
+    border-left-color: transparent;
+}
+
+.arrow-down.arrow-player1 {
+    border-top-color: blue;
+}
+
+.arrow-down.arrow-player2 {
+    border-top-color: red;
 }
 
 .arrow-left {
     border-width: 20px 40px 20px 0;
-    border-color: transparent blue transparent transparent;
+    border-top-color: transparent;
+    border-bottom-color: transparent;
+    border-left-color: transparent;
+}
+
+.arrow-left.arrow-player1 {
+    border-right-color: blue;
+}
+
+.arrow-left.arrow-player2 {
+    border-right-color: red;
 }
 
 .arrow-right {
     border-width: 20px 0 20px 40px;
-    border-color: transparent transparent transparent blue;
+    border-top-color: transparent;
+    border-right-color: transparent;
+    border-bottom-color: transparent;
+}
+
+.arrow-right.arrow-player1 {
+    border-left-color: blue;
+}
+
+.arrow-right.arrow-player2 {
+    border-left-color: red;
 }
 
 .wall {

@@ -147,15 +147,15 @@ object(self)
   method oob (x, y) =
     not (0 <= x && x <= 7 && 0 <= y && y <= 7)
 
-  method try_arrow pos dir =
+  method try_arrow pos dir player =
     match self#get pos with
     | Some _ -> ()
-    | None -> self#add_arrow pos dir
+    | None -> self#add_arrow pos dir player
 
-  method add_arrow pos dir =
+  method add_arrow pos dir player =
     let (i, j) = pos in
     let cell = cells.(j).(i) in
-    let a = new arrow cell pos dir in
+    let a = new arrow cell pos dir player in
     self#set pos (Some (Arrow a));
     Queue.add a arrows;
     if Queue.length arrows > 4 then
