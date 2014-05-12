@@ -16,6 +16,22 @@ let parse_keycode = function
   | 39 -> Some (ActArrow R)
   | _ -> None
 
+let parse_gp gp =
+  let btn i = Gamepad.button_is_pressed (gp.gp_btns.(i)) in
+  let x = gp.gp_axes.(0) in
+  let y = gp.gp_axes.(1) in
+  let neutral f = abs_float f < 0.1 in
+  match () with
+  | _ when neutral y && x < -0.5 -> Some (ActMove L)
+  | _ when neutral y && x >  0.5 -> Some (ActMove R)
+  | _ when neutral x && y < -0.5 -> Some (ActMove U)
+  | _ when neutral x && y >  0.5 -> Some (ActMove D)
+  | _ when btn 5 -> Some (ActArrow U)
+  | _ when btn 4 -> Some (ActArrow R)
+  | _ when btn 0 -> Some (ActArrow D)
+  | _ when btn 1 -> Some (ActArrow L)
+  | _ -> None
+
 let float_pos (x, y) =
   (float x, float y)
 
@@ -45,12 +61,7 @@ object(self)
       )
     | CD_Gamepad ->
         game#subscribe_gamepad (fun s ->
-          let ao = match s with
-          | { gp_dir = Some d } -> Some (ActMove d)
-          | { gp_arrow = Some d } -> Some (ActArrow d)
-          | _ -> None
-          in
-          match ao with
+          match parse_gp s with
           | None -> ()
           | Some a -> self#interpret game a
         )

@@ -7,46 +7,26 @@ open Tools
 open Types
 open Wall
 
-let gp_zero =
-  { gp_dir = None
-  ; gp_arrow = None
-  }
-
 let first_gp gps =
   Js.Optdef.get
     (Js.array_get gps 0)
     (fun () -> invalid_arg "gp_state_from_gamepads")
 
 let gp_state_from_gamepads (gp:'a Js.t) =
-  let axes = Js.to_array (gp##axes) in
-  let btns = Js.to_array (gp##buttons) in
-  let btn i = Gamepad.button_is_pressed (btns.(i)) in
-  let x = axes.(0) in
-  let y = axes.(1) in
-  let neutral f = abs_float f < 0.1 in
-  let dir = match () with
-  | _ when neutral y && x < -0.5 -> Some L
-  | _ when neutral y && x > 0.5 -> Some R
-  | _ when neutral x && y < -0.5 -> Some U
-  | _ when neutral x && y > 0.5 -> Some D
-  | _ -> None
-  in
-  let arr = match () with
-  | _ when btn 5 -> Some U
-  | _ when btn 4 -> Some R
-  | _ when btn 0 -> Some D
-  | _ when btn 1 -> Some L
-  | _ -> None
-  in
-  { gp_dir = dir
-  ; gp_arrow = arr
+  { gp_ts = gp##timestamp
+  ; gp_axes = Js.to_array (gp##axes)
+  ; gp_btns = Js.to_array (gp##buttons)
   }
 
 (**
  * Something to track state of gamepads and notify on change.
  *)
 class gamepad_watch = object(self)
-  val mutable state = gp_zero
+  val mutable state =
+    { gp_ts = -1
+    ; gp_axes = [||]
+    ; gp_btns = [||]
+    }
 
   val mutable notify_func = None
 
@@ -54,7 +34,7 @@ class gamepad_watch = object(self)
     let gps = Gamepad.getGamepads () in
     let gp = first_gp gps in
     let new_state = gp_state_from_gamepads gp in
-    begin if state <> new_state then
+    begin if state.gp_ts <> new_state.gp_ts then
       self#fire new_state
     end;
     state <- new_state

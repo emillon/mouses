@@ -20,6 +20,7 @@ type control_device =
   | CD_Gamepad
 
 type gp_state =
-  { gp_dir : direction option
-  ; gp_arrow : direction option
+  { gp_ts : int
+  ; gp_axes : float array
+  ; gp_btns : Gamepad_types.gamepadButton array
   }
