@@ -111,7 +111,8 @@ object(self)
       done;
       Dom.appendChild dom row
     done;
-    let _ = new cursor dom self (0, 0) in
+    let c = new cursor dom (0, 0) in
+    c#attach_to self;
     Dom.appendChild dom score_div;
     self#update_score
 
