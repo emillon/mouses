@@ -21,4 +21,5 @@ type control_device =
 
 type gp_state =
   { gp_dir : direction option
+  ; gp_arrow : direction option
   }

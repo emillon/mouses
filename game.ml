@@ -9,6 +9,7 @@ open Wall
 
 let gp_zero =
   { gp_dir = None
+  ; gp_arrow = None
   }
 
 let first_gp gps =
@@ -18,6 +19,8 @@ let first_gp gps =
 
 let gp_state_from_gamepads (gp:'a Js.t) =
   let axes = Js.to_array (gp##axes) in
+  let btns = Js.to_array (gp##buttons) in
+  let btn i = Gamepad.button_is_pressed (btns.(i)) in
   let x = axes.(0) in
   let y = axes.(1) in
   let neutral f = abs_float f < 0.1 in
@@ -28,7 +31,16 @@ let gp_state_from_gamepads (gp:'a Js.t) =
   | _ when neutral x && y > 0.5 -> Some D
   | _ -> None
   in
-  { gp_dir = dir }
+  let arr = match () with
+  | _ when btn 5 -> Some U
+  | _ when btn 4 -> Some R
+  | _ when btn 0 -> Some D
+  | _ when btn 1 -> Some L
+  | _ -> None
+  in
+  { gp_dir = dir
+  ; gp_arrow = arr
+  }
 
 (**
  * Something to track state of gamepads and notify on change.

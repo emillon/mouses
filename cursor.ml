@@ -45,9 +45,14 @@ object(self)
       )
     | CD_Gamepad ->
         game#subscribe_gamepad (fun s ->
-          match s.gp_dir with
+          let ao = match s with
+          | { gp_dir = Some d } -> Some (ActMove d)
+          | { gp_arrow = Some d } -> Some (ActArrow d)
+          | _ -> None
+          in
+          match ao with
           | None -> ()
-          | Some d -> self#interpret game (ActMove d)
+          | Some a -> self#interpret game a
         )
 
   method interpret game = function
