@@ -19,7 +19,7 @@ let parse_keycode = function
 let float_pos (x, y) =
   (float x, float y)
 
-class ['game] cursor parent pos =
+class ['game] cursor parent pos cd =
 object(self)
   val dom = div_class "cursor"
   val mutable pos = pos
@@ -30,13 +30,15 @@ object(self)
   end
 
   method attach_to (game:'game) =
-    Dom_html.document##onkeydown <- Dom_html.handler (fun ev ->
-      begin match parse_keycode (ev##keyCode) with
-      | None -> ()
-      | Some a -> self#interpret game a
-      end;
-      Js._true
-    )
+    match cd with
+    | CD_Keyboard ->
+      Dom_html.document##onkeydown <- Dom_html.handler (fun ev ->
+        begin match parse_keycode (ev##keyCode) with
+        | None -> ()
+        | Some a -> self#interpret game a
+        end;
+        Js._true
+      )
 
   method interpret game = function
     | ActMove d ->

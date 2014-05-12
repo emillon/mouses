@@ -14,3 +14,6 @@ type ('sink, 'arrow) tile =
 type mouse_act =
   | MA_Sink of player
   | MA_Dir of direction
+
+type control_device =
+  | CD_Keyboard

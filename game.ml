@@ -111,7 +111,7 @@ object(self)
       done;
       Dom.appendChild dom row
     done;
-    let c = new cursor dom (0, 0) in
+    let c = new cursor dom (0, 0) CD_Keyboard in
     c#attach_to self;
     Dom.appendChild dom score_div;
     self#update_score
