@@ -68,11 +68,13 @@ object(self)
 
   val score = Hashtbl.create 2
 
+  val arrows = Hashtbl.create 2
+
   initializer
     Hashtbl.add score P1 0;
-    Hashtbl.add score P2 0
-
-  val arrows = Queue.create ()
+    Hashtbl.add score P2 0;
+    Hashtbl.add arrows P1 (Queue.create ());
+    Hashtbl.add arrows P2 (Queue.create ())
 
   method add_mouse ~is_cat pos dir =
     let m = new mouse is_cat dom pos dir in
@@ -140,10 +142,11 @@ object(self)
     let cell = cells.(j).(i) in
     let a = new arrow cell pos dir player in
     self#set pos (Some (Arrow a));
-    Queue.add a arrows;
-    if Queue.length arrows > 4 then
+    let q = Hashtbl.find arrows player in
+    Queue.add a q;
+    if Queue.length q > 4 then
       begin
-        let a_del = Queue.pop arrows in
+        let a_del = Queue.pop q in
         a_del#detach;
         self#set (a_del#pos) None (* TODO better: put coords in queue *)
       end
