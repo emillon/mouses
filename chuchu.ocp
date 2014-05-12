@@ -14,7 +14,11 @@ begin program "chuchu"
         "web.ml"
     ]
     syntax = "js_of_ocaml.camlp4-syntax"
-    requires = ["js_of_ocaml" "js_of_ocaml.camlp4-syntax"]
+    requires = [
+        "js_of_ocaml"
+        "js_of_ocaml.camlp4-syntax"
+        "gamepad"
+    ]
 end
 
 begin

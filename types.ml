@@ -17,3 +17,8 @@ type mouse_act =
 
 type control_device =
   | CD_Keyboard
+  | CD_Gamepad
+
+type gp_state =
+  { gp_dir : direction option
+  }

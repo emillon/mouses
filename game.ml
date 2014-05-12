@@ -7,6 +7,57 @@ open Tools
 open Types
 open Wall
 
+let gp_zero =
+  { gp_dir = None
+  }
+
+let first_gp gps =
+  Js.Optdef.get
+    (Js.array_get gps 0)
+    (fun () -> invalid_arg "gp_state_from_gamepads")
+
+let gp_state_from_gamepads (gp:'a Js.t) =
+  let axes = Js.to_array (gp##axes) in
+  let x = axes.(0) in
+  let y = axes.(1) in
+  let neutral f = abs_float f < 0.1 in
+  let dir = match () with
+  | _ when neutral y && x < -0.5 -> Some L
+  | _ when neutral y && x > 0.5 -> Some R
+  | _ when neutral x && y < -0.5 -> Some U
+  | _ when neutral x && y > 0.5 -> Some D
+  | _ -> None
+  in
+  { gp_dir = dir }
+
+(**
+ * Something to track state of gamepads and notify on change.
+ *)
+class gamepad_watch = object(self)
+  val mutable state = gp_zero
+
+  val mutable notify_func = None
+
+  method reload =
+    let gps = Gamepad.getGamepads () in
+    let gp = first_gp gps in
+    let new_state = gp_state_from_gamepads gp in
+    begin if state <> new_state then
+      self#fire new_state
+    end;
+    state <- new_state
+
+  method subscribe f =
+    assert (notify_func = None);
+    notify_func <- Some f
+
+  method fire x =
+    match notify_func with
+    | None -> ()
+    | Some f -> f x
+
+end
+
 class game dom =
   let score_div = div_class "score" in
 object(self)
@@ -16,6 +67,7 @@ object(self)
   val mutable spawners = []
   val mutable frames = 0
   val mutable interval_id = None
+  val gamepad_watch = new gamepad_watch
 
   val board = Array.make_matrix 8 8 None
 
@@ -111,13 +163,19 @@ object(self)
       done;
       Dom.appendChild dom row
     done;
-    let c = new cursor dom (0, 0) CD_Keyboard in
-    c#attach_to self;
+    let c1 = new cursor dom (0, 0) P1 CD_Keyboard in
+    c1#attach_to self;
+    let c2 = new cursor dom (7, 7) P2 CD_Gamepad in
+    c2#attach_to self;
     Dom.appendChild dom score_div;
     self#update_score
 
+  method subscribe_gamepad f =
+    gamepad_watch#subscribe f
+
   method anim =
     self#every_nth_frame 100 (fun () -> self#select_spawner);
+    gamepad_watch#reload;
     List.iter (fun s -> s#anim self) spawners;
     List.iter (fun m -> m#anim self) mouses
 

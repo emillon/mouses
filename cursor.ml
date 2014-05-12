@@ -19,9 +19,13 @@ let parse_keycode = function
 let float_pos (x, y) =
   (float x, float y)
 
-class ['game] cursor parent pos cd =
+class ['game] cursor parent pos player cd =
+  let extraclass = match player with
+  | P1 -> "cursor-player1"
+  | P2 -> "cursor-player2"
+  in
 object(self)
-  val dom = div_class "cursor"
+  val dom = div_class ~extraclass "cursor"
   val mutable pos = pos
 
   initializer begin
@@ -39,6 +43,12 @@ object(self)
         end;
         Js._true
       )
+    | CD_Gamepad ->
+        game#subscribe_gamepad (fun s ->
+          match s.gp_dir with
+          | None -> ()
+          | Some d -> self#interpret game (ActMove d)
+        )
 
   method interpret game = function
     | ActMove d ->
