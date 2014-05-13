@@ -1,3 +1,8 @@
+#container {
+    width: 500px;
+    margin: auto;
+}
+
 #game {
     position: relative;
 }
@@ -5,8 +10,7 @@
 .cell {
     width: 60px;
     height: 60px;
-    float: left;
-}
+    float: left; }
 
 .cell-even {
     background-color: #ddd;
@@ -90,22 +94,62 @@
 
 .arrow-up {
     border-width: 0 20px 40px 20px;
-    border-color: transparent transparent blue transparent;
+    border-top-color: transparent;
+    border-right-color: transparent;
+    border-left-color: transparent;
+}
+
+.arrow-up.arrow-player1 {
+    border-bottom-color: blue;
+}
+
+.arrow-up.arrow-player2 {
+    border-bottom-color: red;
 }
 
 .arrow-down {
     border-width: 40px 20px 0 20px;
-    border-color: blue transparent transparent transparent;
+    border-right-color: transparent;
+    border-bottom-color: transparent;
+    border-left-color: transparent;
+}
+
+.arrow-down.arrow-player1 {
+    border-top-color: blue;
+}
+
+.arrow-down.arrow-player2 {
+    border-top-color: red;
 }
 
 .arrow-left {
     border-width: 20px 40px 20px 0;
-    border-color: transparent blue transparent transparent;
+    border-top-color: transparent;
+    border-bottom-color: transparent;
+    border-left-color: transparent;
+}
+
+.arrow-left.arrow-player1 {
+    border-right-color: blue;
+}
+
+.arrow-left.arrow-player2 {
+    border-right-color: red;
 }
 
 .arrow-right {
     border-width: 20px 0 20px 40px;
-    border-color: transparent transparent transparent blue;
+    border-top-color: transparent;
+    border-right-color: transparent;
+    border-bottom-color: transparent;
+}
+
+.arrow-right.arrow-player1 {
+    border-left-color: blue;
+}
+
+.arrow-right.arrow-player2 {
+    border-left-color: red;
 }
 
 .wall {
@@ -154,8 +198,58 @@
     height: 30px;
     background-color: #EF9E54;
     position: absolute;
+    text-align: center;
+}
+
+.sink-player {
+    margin: 10px;
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+}
+
+.sink-player1 {
+    background-color: blue;
+}
+
+.sink-player2 {
+    background-color: red;
 }
 
 .score {
-    float:left;
+    clear: both;
+    text-align: center;
+    font-size: 50;
+    font-family: monospace;
+}
+
+.cursor {
+    width: 54px;
+    height: 54px;
+    position: absolute;
+}
+
+.cursor-player1 {
+    border: 3px solid blue;
+}
+
+.cursor-player2 {
+    border: 3px solid red;
+}
+
+.controlwindow {
+    position: relative;
+    margin: auto;
+    height: 100px;
+    width: 200px;
+    background-color: #333;
+    color: #ddd;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.closebtn {
+    position: absolute;
+    top: 3px;
+    right: 3px;
 }
