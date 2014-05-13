@@ -13,6 +13,33 @@ let first_gp gps =
     (fun () -> None)
     (fun x -> Some x)
 
+type axe_pos =
+  | Axe_Neg
+  | Axe_Zero
+  | Axe_Pos
+
+let axe_pos = function
+  | x when x < -0.5 -> Axe_Neg
+  | x when x >  0.5 -> Axe_Pos
+  | _ -> Axe_Zero
+
+let gp_event_from_state gp =
+  let ax = array_findi gp.gp_axes (fun i x ->
+    match axe_pos x with
+    | Axe_Neg -> Some (GP_Axis (i, GPA_Neg))
+    | Axe_Pos -> Some (GP_Axis (i, GPA_Pos))
+    | Axe_Zero -> None
+  ) in
+  let btn =
+    array_findi gp.gp_btns (fun i b ->
+      if Gamepad.button_is_pressed b then
+        Some (GP_Btn i)
+      else
+        None
+    )
+  in
+  first_of [btn;ax]
+
 let gp_state_from_gamepads (gp:'a Js.t) =
   { gp_ts = gp##timestamp
   ; gp_axes = Js.to_array (gp##axes)
@@ -37,7 +64,9 @@ class gamepad_watch = object(self)
     | Some gp -> begin
       let new_state = gp_state_from_gamepads gp in
       begin if state.gp_ts <> new_state.gp_ts then
-        self#fire new_state
+        match gp_event_from_state new_state with
+        | Some e -> self#fire e
+        | None -> ()
       end;
       state <- new_state
     end
@@ -52,6 +81,28 @@ class gamepad_watch = object(self)
     | Some f -> f x
 
 end
+
+let default_kbd_binding =
+  [ (90, ActMove U)
+  ; (83, ActMove D)
+  ; (81, ActMove L)
+  ; (68, ActMove R)
+  ; (38, ActArrow U)
+  ; (40, ActArrow D)
+  ; (37, ActArrow L)
+  ; (39, ActArrow R)
+  ]
+
+let default_gp_binding =
+  [ (GP_Axis (0, GPA_Neg), ActMove L)
+  ; (GP_Axis (0, GPA_Pos), ActMove R)
+  ; (GP_Axis (1, GPA_Neg), ActMove U)
+  ; (GP_Axis (1, GPA_Pos), ActMove D)
+  ; (GP_Btn 5, ActArrow U)
+  ; (GP_Btn 4, ActArrow R)
+  ; (GP_Btn 0, ActArrow D)
+  ; (GP_Btn 1, ActArrow L)
+  ]
 
 class game dom =
   let score_div = div_class "score" in
@@ -161,9 +212,9 @@ object(self)
       done;
       Dom.appendChild dom row
     done;
-    let c1 = new cursor dom (0, 0) P1 CD_Keyboard in
+    let c1 = new cursor dom (0, 0) P1 (CD_Keyboard default_kbd_binding) in
     c1#attach_to self;
-    let c2 = new cursor dom (7, 7) P2 CD_Gamepad in
+    let c2 = new cursor dom (7, 7) P2 (CD_Gamepad default_gp_binding) in
     c2#attach_to self;
     Dom.appendChild dom score_div;
     self#update_score

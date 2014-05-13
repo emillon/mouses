@@ -15,12 +15,28 @@ type mouse_act =
   | MA_Sink of player
   | MA_Dir of direction
 
-type control_device =
-  | CD_Keyboard
-  | CD_Gamepad
+type action =
+  | ActMove of direction
+  | ActArrow of direction
 
 type gp_state =
   { gp_ts : int
   ; gp_axes : float array
   ; gp_btns : Gamepad_types.gamepadButton array
   }
+
+type gp_axe_dir =
+  | GPA_Neg
+  | GPA_Pos
+
+type gp_event =
+  | GP_Axis of int * gp_axe_dir
+  | GP_Btn of int
+
+type kbd_binding = (int * action) list
+
+type gp_binding = (gp_event * action) list
+
+type control_device =
+  | CD_Keyboard of kbd_binding
+  | CD_Gamepad of gp_binding

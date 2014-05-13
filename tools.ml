@@ -108,3 +108,20 @@ let init_matrix h w f =
       f i j
     )
   )
+
+let assoc_opt x f =
+  try
+    Some (List.assoc x f)
+  with Not_found -> None
+
+let array_findi a f =
+  let r = ref None in
+  begin try Array.iteri (fun i x ->
+    match f i x with
+    | None -> ()
+    | Some x -> begin
+      r := Some x;
+      raise Found
+    end
+  ) a with Found -> () end;
+  !r
