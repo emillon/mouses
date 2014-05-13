@@ -73,7 +73,6 @@ class gamepad_watch = object(self)
     end
 
   method subscribe f =
-    assert (notify_func = None);
     notify_func <- Some f
 
   method fire x =
@@ -219,21 +218,21 @@ object(self)
     c2#attach_to self;
     Dom.appendChild dom score_div;
     self#update_score;
-    let c =
-      new controls dom
-        ~on_start:(fun () -> self#stop)
-        ~on_end:(fun () -> self#start)
-    in
+    let c = new controls dom self in
     Dom.appendChild dom (c#rebind_btn)
 
   method subscribe_gamepad f =
     gamepad_watch#subscribe f
 
+  val mutable active = false
+
   method anim =
     self#every_nth_frame 100 (fun () -> self#select_spawner);
     gamepad_watch#reload;
-    List.iter (fun s -> s#anim self) spawners;
-    List.iter (fun m -> m#anim self) mouses
+    if active then begin
+      List.iter (fun s -> s#anim self) spawners;
+      List.iter (fun m -> m#anim self) mouses
+    end
 
   method start =
     let iid = Dom_html.window##setInterval(Js.wrap_callback (fun () ->
@@ -241,15 +240,11 @@ object(self)
       self#anim
     ), 16.) in
     assert (interval_id = None);
-    interval_id <- Some iid
+    interval_id <- Some iid;
+    active <- true
 
   method stop =
-    match interval_id with
-    | None -> assert false
-    | Some i -> begin
-      Dom_html.window##clearInterval(i);
-      interval_id <- None
-    end
+    active <- false
 
   method every_nth_frame n f =
     if frames mod n = 0 then

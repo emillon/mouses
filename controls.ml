@@ -1,107 +1,136 @@
 open Tools
+open Types
 
-let nplayers = 2
 let t_detect = 1000. (* milliseconds *)
 
-type control_type =
-  | Mouse
-  | Keyboard
+let tell s =
+  Firebug.console##log(js s)
 
-let p_ct () = function
-  | None -> assert false
-  | Some Mouse -> "mouse"
-  | Some Keyboard -> "keyboard"
+type slot_state =
+  | ST_Start
+  | ST_WU
+  | ST_WD
+  | ST_WL
+  | ST_WR
+  | ST_WAU
+  | ST_WAD
+  | ST_WAL
+  | ST_WAR
+  | ST_Done
 
-class binder parent n =
-  let dom = div_class "binder" in
-  let _ = Dom.appendChild parent dom in
+(* state name  on screen   act
+ * ===========================
+ * Start       Press...
+ *                        <any>
+ * WU          Up?
+ *                        keyup
+ * WD          Down?
+ *                        keydown
+ *        ...
+ * WAR         ArrowRight?
+ *                        keyar
+ * Done        Done
+ *)
+
+let st_name = function
+  | ST_Start -> invalid_arg "st_name"
+  | ST_WU -> "Up?"
+  | ST_WD -> "Down?"
+  | ST_WL -> "Left?"
+  | ST_WR -> "Right?"
+  | ST_WAU -> "Arrow Up?"
+  | ST_WAD -> "Arrow Down?"
+  | ST_WAL -> "Arrow Left?"
+  | ST_WAR -> "Arrow Right?"
+  | ST_Done -> "Done!"
+
+let next_state = function
+  | ST_Start -> ST_WU
+  | ST_WU -> ST_WD
+  | ST_WD -> ST_WL
+  | ST_WL -> ST_WR
+  | ST_WR -> ST_WAU
+  | ST_WAU -> ST_WAD
+  | ST_WAD -> ST_WAL
+  | ST_WAL -> ST_WAR
+  | ST_WAR -> ST_Done
+  | ST_Done -> ST_Done
+
+let action_state = function
+  | ST_Start -> None
+  | ST_WU -> Some (ActMove U)
+  | ST_WD -> Some (ActMove D)
+  | ST_WL -> Some (ActMove L)
+  | ST_WR -> Some (ActMove R)
+  | ST_WAU -> Some (ActArrow U)
+  | ST_WAD -> Some (ActArrow D)
+  | ST_WAL -> Some (ActArrow L)
+  | ST_WAR -> Some (ActArrow R)
+  | ST_Done -> None
+
+type keybinding =
+  | KB_KP of int
+  | KB_GP of gp_event
+
+class slot parent =
+  let dom = div_class "slot" in
+  let _ = dom##innerHTML <- js "Press" in
 object(self)
-  val mutable control_type :control_type option = None
-  val mutable timeout = None
-  val mutable bound = false
+  val mutable avail = true
 
-  method private set_text t =
-    dom##innerHTML <- js t
+  method avail = avail
 
-  method private reset =
-    control_type <- None;
-    self#set_text (Printf.sprintf "P%d" n)
+  method notavail =
+    avail <- false
 
-  method settype ct =
-    control_type <- Some ct
+  method private tell s =
+    dom##innerHTML <- js s
 
-  method start =
-    let tid = Dom_html.window##setTimeout(Js.wrap_callback(fun () ->
-      self#detect_done
-      ), t_detect)
-    in
-    timeout <- Some tid;
-    self#set_text (Printf.sprintf "Press %a..." p_ct control_type)
+  val mutable state = ST_Start
 
-  method private event_reset =
-    begin match timeout with
-    | None -> ()
-    | Some tid ->
-      Dom_html.window##clearTimeout(tid)
-    end;
-    if not bound then
-      self#reset
+  method private handle_binding e =
+    match state with
+    | (ST_Start|ST_WU|ST_WD|ST_WL|ST_WR|ST_WAU|ST_WAD|ST_WAL|ST_WAR) ->
+        let ns = next_state state in
+        self#tell (st_name ns);
+        begin match action_state state with
+        | Some a -> self#add_binding e a
+        | None -> ()
+        end;
+        state <- ns
+    | ST_Done -> ()
 
-  method onmouseup = self#event_reset
-  method onkeyup = self#event_reset
+  method onkeydown (e:Dom_html.keyboardEvent Js.t) =
+    self#handle_binding (KB_KP (e##keyCode))
 
-  method private detect_done =
-    self#set_text "OK";
-    bound <- true
+  method ongamepad (e:gp_event) =
+    self#handle_binding (KB_GP e)
 
-  method available =
-    control_type = None
+  val mutable bindings = []
 
-  initializer
-    self#reset
+  method private add_binding e a =
+    bindings <- (e, a)::bindings
+
+  method attach =
+    Dom.appendChild parent dom
+
 end
 
-class binder_list parent =
-  let dom = div_class "binder-list" in
-  let binders = Array.init nplayers (fun n -> new binder dom n) in
-  let _ = Dom.appendChild parent dom in
-object(self)
-  method start =
-    ()
-
-  method private first_avail =
-    match array_find (fun b -> b#available) binders with
-    | None -> failwith "first_avail: too many players"
-    | Some b -> b
-
-  method private start_first ct =
-    let slot = self#first_avail in
-    slot#settype ct;
-    slot#start
-
-  method onmousedown =
-    self#start_first Mouse
-
-  method onmouseup =
-    Array.iter (fun b -> b#onmouseup) binders
-
-  method onkeydown =
-    self#start_first Keyboard
-
-  method onkeyup =
-    Array.iter (fun b -> b#onkeyup) binders
-
-end
-
-class controls parent ~on_start ~on_end =
+class controls parent game =
   let popup = div_class "controlwindow" in
 object(self)
 
   method rebind_btn =
     let btn = Dom_html.createButton Dom_html.document in
     btn##innerHTML <- js"Rebind";
-    btn##onclick <- Dom_html.handler (fun _ -> on_start();self#show_popup;Js._true);
+    btn##onclick <- Dom_html.handler (fun _ ->
+      game#stop;
+      self#show_popup;
+      Js._true);
     btn
+
+  val slot1 = new slot popup
+  val slot2 = new slot popup
 
   method private show_popup =
     popup##innerHTML <- js"";
@@ -109,17 +138,37 @@ object(self)
     Dom.appendChild popup title;
     let closeBtn = text_div ~cls:"closebtn" "[X]" in
     on_click closeBtn (fun () -> self#finish);
-    let bl = new binder_list popup in
-    on_mousedown Dom_html.window (fun () -> bl#onmousedown);
-    on_mouseup Dom_html.window (fun () -> bl#onmouseup);
-    on_keydown Dom_html.window (fun () -> bl#onkeydown);
-    on_keyup Dom_html.window (fun () -> bl#onkeyup);
+    Dom_html.document##onkeydown <- Dom_html.handler (fun e ->
+      self#onkeydown e;
+      Js._true
+    );
+    game#subscribe_gamepad self#ongamepad;
     Dom.appendChild popup closeBtn;
+    slot1#attach;
+    slot2#attach;
     Dom.appendChild parent popup
+
+  method ongamepad _ =
+    let s = self#find_avail_slot in
+    s#notavail;
+    game#subscribe_gamepad s#ongamepad
+
+  method onkeydown _ =
+    let s = self#find_avail_slot in
+    s#notavail;
+    Dom_html.document##onkeydown <- Dom_html.handler (fun e ->
+      s#onkeydown e;
+      Js._true
+    )
+
+  method private find_avail_slot =
+    if slot1#avail then slot1 else
+    if slot2#avail then slot2 else
+      invalid_arg "find_avail_slot"
 
   method private finish =
     Dom.removeChild parent popup;
     Dom_html.window##onmousedown <- Dom.no_handler;
-    on_end ()
+    game#start
 
 end
