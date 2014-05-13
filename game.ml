@@ -158,7 +158,7 @@ object(self)
 
   method rebind player binding =
     let cursor = Hashtbl.find cursors player in
-    cursor#rebind binding
+    cursor#rebind binding self
 
   method add_mouse ~is_cat pos dir =
     let m = new mouse is_cat dom pos dir in
@@ -253,6 +253,9 @@ object(self)
     ), 16.) in
     assert (interval_id = None);
     interval_id <- Some iid;
+    active <- true
+
+  method continue =
     active <- true
 
   method stop =

@@ -77,6 +77,14 @@ class slot parent =
   let _ = dom##innerHTML <- js "Press" in
 object(self)
   val mutable avail = true
+  val mutable state = ST_Start
+  val mutable bindings = None
+
+  method reset =
+    avail <- true;
+    state <- ST_Start;
+    bindings <- None;
+    self#tell "Press"
 
   method avail = avail
 
@@ -85,8 +93,6 @@ object(self)
 
   method private tell s =
     dom##innerHTML <- js s
-
-  val mutable state = ST_Start
 
   method private handle_binding e =
     match state with
@@ -105,8 +111,6 @@ object(self)
 
   method ongamepad (e:gp_event) =
     self#handle_binding (KB_GP e)
-
-  val mutable bindings = None
 
   method private add_binding e a =
     let new_bindings =
@@ -145,6 +149,8 @@ object(self)
 
   method private show_popup =
     popup##innerHTML <- js"";
+    slot1#reset;
+    slot2#reset;
     let title = text_div "Controls" in
     Dom.appendChild popup title;
     let closeBtn = text_div ~cls:"closebtn" "[X]" in
@@ -164,9 +170,10 @@ object(self)
     s#notavail;
     game#subscribe_gamepad s#ongamepad
 
-  method onkeydown _ =
+  method onkeydown e =
     let s = self#find_avail_slot in
     s#notavail;
+    s#onkeydown e;
     Dom_html.document##onkeydown <- Dom_html.handler (fun e ->
       s#onkeydown e;
       Js._true
@@ -180,8 +187,8 @@ object(self)
   method private finish =
     Dom.removeChild parent popup;
     Dom_html.window##onmousedown <- Dom.no_handler;
-    match slot1#binding with | None -> () | Some b -> game#rebind P1 b;
-    match slot2#binding with | None -> () | Some b -> game#rebind P2 b;
-    game#start
+    begin match slot1#binding with | None -> () | Some b -> game#rebind P1 b end;
+    begin match slot2#binding with | None -> () | Some b -> game#rebind P2 b end;
+    game#continue
 
 end
