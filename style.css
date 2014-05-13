@@ -1,5 +1,7 @@
 #game {
     position: relative;
+    width: 500px;
+    margin: auto;
 }
 
 .cell {
