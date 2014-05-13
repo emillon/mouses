@@ -106,10 +106,19 @@ object(self)
   method ongamepad (e:gp_event) =
     self#handle_binding (KB_GP e)
 
-  val mutable bindings = []
+  val mutable bindings = None
 
   method private add_binding e a =
-    bindings <- (e, a)::bindings
+    let new_bindings =
+    match (e, bindings) with
+    | KB_KP n, None -> Some (CD_Keyboard [(n, a)])
+    | KB_KP n, Some (CD_Keyboard xs) -> Some (CD_Keyboard ((n, a)::xs))
+    | KB_KP n, Some (CD_Gamepad _) -> invalid_arg "add_binding"
+    | KB_GP g, None -> Some (CD_Gamepad [(g, a)])
+    | KB_GP g, Some (CD_Gamepad xs) -> Some (CD_Gamepad ((g, a)::xs))
+    | KB_GP g, Some (CD_Keyboard _) -> invalid_arg "add_binding"
+    in
+    bindings <- new_bindings
 
   method attach =
     Dom.appendChild parent dom
