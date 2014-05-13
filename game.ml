@@ -121,11 +121,34 @@ object(self)
 
   val arrows = Hashtbl.create 2
 
+  val cells = init_matrix 8 8 (fun i j ->
+    let extraclass = if (i + j) mod 2 = 0 then "cell-even" else "cell-odd" in
+    div_class ~extraclass "cell"
+  )
+
   initializer
     Hashtbl.add score P1 0;
     Hashtbl.add score P2 0;
     Hashtbl.add arrows P1 (Queue.create ());
-    Hashtbl.add arrows P2 (Queue.create ())
+    Hashtbl.add arrows P2 (Queue.create ());
+    for j = 0 to 7 do
+      let row = div_class "row" in
+      for i = 0 to 7 do
+        let cell = cells.(j).(i) in
+        cell##onmousedown <- Dom_html.handler (fun e -> Js._false);
+        Dom.appendChild row cell
+      done;
+      Dom.appendChild dom row
+    done;
+    let c1 = new cursor dom (0, 0) P1 (CD_Keyboard default_kbd_binding) in
+    c1#attach_to self;
+    let c2 = new cursor dom (7, 7) P2 (CD_Gamepad default_gp_binding) in
+    c2#attach_to self;
+    Dom.appendChild dom score_div;
+    self#update_score;
+    let c = new controls dom self in
+    Dom.appendChild dom (c#rebind_btn)
+
 
   method add_mouse ~is_cat pos dir =
     let m = new mouse is_cat dom pos dir in
@@ -175,11 +198,6 @@ object(self)
     let s = new sink dom pos player in
     self#set pos (Some (Sink s))
 
-  val cells = init_matrix 8 8 (fun i j ->
-    let extraclass = if (i + j) mod 2 = 0 then "cell-even" else "cell-odd" in
-    div_class ~extraclass "cell"
-  )
-
   method oob (x, y) =
     not (0 <= x && x <= 7 && 0 <= y && y <= 7)
 
@@ -201,25 +219,6 @@ object(self)
         a_del#detach;
         self#set (a_del#pos) None (* TODO better: put coords in queue *)
       end
-
-  initializer
-    for j = 0 to 7 do
-      let row = div_class "row" in
-      for i = 0 to 7 do
-        let cell = cells.(j).(i) in
-        cell##onmousedown <- Dom_html.handler (fun e -> Js._false);
-        Dom.appendChild row cell
-      done;
-      Dom.appendChild dom row
-    done;
-    let c1 = new cursor dom (0, 0) P1 (CD_Keyboard default_kbd_binding) in
-    c1#attach_to self;
-    let c2 = new cursor dom (7, 7) P2 (CD_Gamepad default_gp_binding) in
-    c2#attach_to self;
-    Dom.appendChild dom score_div;
-    self#update_score;
-    let c = new controls dom self in
-    Dom.appendChild dom (c#rebind_btn)
 
   method subscribe_gamepad f =
     gamepad_watch#subscribe f
