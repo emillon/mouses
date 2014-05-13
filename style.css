@@ -1,7 +1,10 @@
-#game {
-    position: relative;
+#container {
     width: 500px;
     margin: auto;
+}
+
+#game {
+    position: relative;
 }
 
 .cell {
@@ -215,7 +218,9 @@
 }
 
 .score {
-    float:left;
+    clear: both;
+    text-align: center;
+    font-size: 50;
 }
 
 .cursor {
