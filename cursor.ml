@@ -18,6 +18,7 @@ class ['game] cursor parent pos player cd =
 object(self)
   val dom = div_class ~extraclass "cursor"
   val mutable pos = pos
+  val mutable control = cd
 
   initializer begin
     style_pos dom (float_pos pos);
@@ -25,7 +26,7 @@ object(self)
   end
 
   method attach_to (game:'game) =
-    match cd with
+    match control with
     | CD_Keyboard binding ->
       Dom_html.document##onkeydown <- Dom_html.handler (fun ev ->
         begin match parse_keycode binding (ev##keyCode) with
@@ -41,6 +42,13 @@ object(self)
           | Some a -> self#interpret game a
         )
 
+  method detach game =
+    match control with
+    | CD_Keyboard _ ->
+        Dom_html.document##onkeydown <- Dom_html.no_handler
+    | CD_Gamepad _ ->
+        game#unsubscribe_gamepad
+
   method interpret game = function
     | ActMove d ->
         let new_pos = pos_dir pos d in
@@ -51,5 +59,10 @@ object(self)
   method move dst =
     pos <- dst;
     style_pos dom (float_pos pos)
+
+  method rebind b game =
+    self#detach game;
+    control <- b;
+    self#attach_to game
 
 end

@@ -120,6 +120,8 @@ object(self)
     in
     bindings <- new_bindings
 
+  method binding = bindings
+
   method attach =
     Dom.appendChild parent dom
 
@@ -178,6 +180,8 @@ object(self)
   method private finish =
     Dom.removeChild parent popup;
     Dom_html.window##onmousedown <- Dom.no_handler;
+    match slot1#binding with | None -> () | Some b -> game#rebind P1 b;
+    match slot2#binding with | None -> () | Some b -> game#rebind P2 b;
     game#start
 
 end

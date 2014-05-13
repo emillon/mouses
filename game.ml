@@ -75,6 +75,9 @@ class gamepad_watch = object(self)
   method subscribe f =
     notify_func <- Some f
 
+  method unsubscribe =
+    notify_func <- None
+
   method fire x =
     match notify_func with
     | None -> ()
@@ -121,6 +124,8 @@ object(self)
 
   val arrows = Hashtbl.create 2
 
+  val cursors = Hashtbl.create 2
+
   val cells = init_matrix 8 8 (fun i j ->
     let extraclass = if (i + j) mod 2 = 0 then "cell-even" else "cell-odd" in
     div_class ~extraclass "cell"
@@ -141,14 +146,19 @@ object(self)
       Dom.appendChild dom row
     done;
     let c1 = new cursor dom (0, 0) P1 (CD_Keyboard default_kbd_binding) in
-    c1#attach_to self;
     let c2 = new cursor dom (7, 7) P2 (CD_Gamepad default_gp_binding) in
+    Hashtbl.add cursors P1 c1;
+    Hashtbl.add cursors P2 c2;
+    c1#attach_to self;
     c2#attach_to self;
     Dom.appendChild dom score_div;
     self#update_score;
     let c = new controls dom self in
     Dom.appendChild dom (c#rebind_btn)
 
+  method rebind player binding =
+    let cursor = Hashtbl.find cursors player in
+    cursor#rebind binding
 
   method add_mouse ~is_cat pos dir =
     let m = new mouse is_cat dom pos dir in
@@ -222,6 +232,9 @@ object(self)
 
   method subscribe_gamepad f =
     gamepad_watch#subscribe f
+
+  method unsubscribe_gamepad =
+    gamepad_watch#unsubscribe
 
   val mutable active = false
 
