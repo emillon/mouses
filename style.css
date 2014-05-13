@@ -220,6 +220,7 @@
     clear: both;
     text-align: center;
     font-size: 50;
+    font-family: monospace;
 }
 
 .cursor {
