@@ -72,7 +72,7 @@ type keybinding =
   | KB_KP of int
   | KB_GP of gp_event
 
-class slot parent =
+class slot parent (player:player) =
   let dom = div_class "slot" in
   let _ = dom##innerHTML <- js "Press" in
 object(self)
@@ -129,6 +129,7 @@ object(self)
   method attach =
     Dom.appendChild parent dom
 
+  method player = player
 end
 
 class controls parent game =
@@ -144,13 +145,10 @@ object(self)
       Js._true);
     btn
 
-  val slot1 = new slot popup
-  val slot2 = new slot popup
+  val slots = Array.map (fun p -> new slot popup p) [|P1;P2|]
 
   method private show_popup =
     popup##innerHTML <- js"";
-    slot1#reset;
-    slot2#reset;
     let title = text_div "Controls" in
     Dom.appendChild popup title;
     let closeBtn = text_div ~cls:"closebtn" "[X]" in
@@ -161,8 +159,10 @@ object(self)
     );
     game#subscribe_gamepad self#ongamepad;
     Dom.appendChild popup closeBtn;
-    slot1#attach;
-    slot2#attach;
+    Array.iter (fun s ->
+      s#reset;
+      s#attach
+    ) slots;
     Dom.appendChild parent popup
 
   method ongamepad _ =
@@ -180,15 +180,18 @@ object(self)
     )
 
   method private find_avail_slot =
-    if slot1#avail then slot1 else
-    if slot2#avail then slot2 else
-      invalid_arg "find_avail_slot"
+    match array_find (fun s -> s#avail) slots with
+    | Some s -> s
+    | None -> invalid_arg "find_avail_slot"
 
   method private finish =
     Dom.removeChild parent popup;
     Dom_html.window##onmousedown <- Dom.no_handler;
-    begin match slot1#binding with | None -> () | Some b -> game#rebind P1 b end;
-    begin match slot2#binding with | None -> () | Some b -> game#rebind P2 b end;
+    Array.iter (fun s ->
+      match s#binding with
+      | None -> ()
+      | Some b -> game#rebind s#player b
+    ) slots;
     game#continue
 
 end
