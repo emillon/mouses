@@ -8,6 +8,103 @@ open Tools
 open Types
 open Wall
 
+let first_gp gps =
+  Js.Optdef.case
+    (Js.array_get gps 0)
+    (fun () -> None)
+    (fun x -> Some x)
+
+type axe_pos =
+  | Axe_Neg
+  | Axe_Zero
+  | Axe_Pos
+
+let axe_pos = function
+  | x when x < -0.5 -> Axe_Neg
+  | x when x >  0.5 -> Axe_Pos
+  | _ -> Axe_Zero
+
+let gp_event_from_state gp =
+  let ax = array_findi gp.gp_axes (fun i x ->
+    match axe_pos x with
+    | Axe_Neg -> Some (GP_Axis (i, GPA_Neg))
+    | Axe_Pos -> Some (GP_Axis (i, GPA_Pos))
+    | Axe_Zero -> None
+  ) in
+  let btn =
+    array_findi gp.gp_btns (fun i b ->
+      if Gamepad.button_is_pressed b then
+        Some (GP_Btn i)
+      else
+        None
+    )
+  in
+  first_of [btn;ax]
+
+let gp_state_from_gamepads (gp:'a Js.t) =
+  { gp_ts = gp##timestamp
+  ; gp_axes = Js.to_array (gp##axes)
+  ; gp_btns = Js.to_array (gp##buttons)
+  }
+
+(**
+ * Something to track state of gamepads and notify on change.
+ *)
+class gamepad_watch = object(self)
+  val mutable state =
+    { gp_ts = -1
+    ; gp_axes = [||]
+    ; gp_btns = [||]
+    }
+
+  val mutable notify_func = None
+
+  method reload =
+    match first_gp (Gamepad.getGamepads ()) with
+    | None -> ()
+    | Some gp -> begin
+      let new_state = gp_state_from_gamepads gp in
+      begin if state.gp_ts <> new_state.gp_ts then
+        match gp_event_from_state new_state with
+        | Some e -> self#fire e
+        | None -> ()
+      end;
+      state <- new_state
+    end
+
+  method subscribe f =
+    assert (notify_func = None);
+    notify_func <- Some f
+
+  method fire x =
+    match notify_func with
+    | None -> ()
+    | Some f -> f x
+
+end
+
+let default_kbd_binding =
+  [ (90, ActMove U)
+  ; (83, ActMove D)
+  ; (81, ActMove L)
+  ; (68, ActMove R)
+  ; (38, ActArrow U)
+  ; (40, ActArrow D)
+  ; (37, ActArrow L)
+  ; (39, ActArrow R)
+  ]
+
+let default_gp_binding =
+  [ (GP_Axis (0, GPA_Neg), ActMove L)
+  ; (GP_Axis (0, GPA_Pos), ActMove R)
+  ; (GP_Axis (1, GPA_Neg), ActMove U)
+  ; (GP_Axis (1, GPA_Pos), ActMove D)
+  ; (GP_Btn 5, ActArrow U)
+  ; (GP_Btn 4, ActArrow R)
+  ; (GP_Btn 0, ActArrow D)
+  ; (GP_Btn 1, ActArrow L)
+  ]
+
 class game dom =
   let score_div = div_class "score" in
 object(self)
@@ -17,16 +114,19 @@ object(self)
   val mutable spawners = []
   val mutable frames = 0
   val mutable interval_id = None
+  val gamepad_watch = new gamepad_watch
 
   val board = Array.make_matrix 8 8 None
 
   val score = Hashtbl.create 2
 
+  val arrows = Hashtbl.create 2
+
   initializer
     Hashtbl.add score P1 0;
-    Hashtbl.add score P2 0
-
-  val arrows = Queue.create ()
+    Hashtbl.add score P2 0;
+    Hashtbl.add arrows P1 (Queue.create ());
+    Hashtbl.add arrows P2 (Queue.create ())
 
   method add_mouse ~is_cat pos dir =
     let m = new mouse is_cat dom pos dir in
@@ -84,20 +184,21 @@ object(self)
   method oob (x, y) =
     not (0 <= x && x <= 7 && 0 <= y && y <= 7)
 
-  method try_arrow pos dir =
+  method try_arrow pos dir player =
     match self#get pos with
     | Some _ -> ()
-    | None -> self#add_arrow pos dir
+    | None -> self#add_arrow pos dir player
 
-  method add_arrow pos dir =
+  method add_arrow pos dir player =
     let (i, j) = pos in
     let cell = cells.(j).(i) in
-    let a = new arrow cell pos dir in
+    let a = new arrow cell pos dir player in
     self#set pos (Some (Arrow a));
-    Queue.add a arrows;
-    if Queue.length arrows > 4 then
+    let q = Hashtbl.find arrows player in
+    Queue.add a q;
+    if Queue.length q > 4 then
       begin
-        let a_del = Queue.pop arrows in
+        let a_del = Queue.pop q in
         a_del#detach;
         self#set (a_del#pos) None (* TODO better: put coords in queue *)
       end
@@ -112,7 +213,10 @@ object(self)
       done;
       Dom.appendChild dom row
     done;
-    let _ = new cursor dom self (0, 0) in
+    let c1 = new cursor dom (0, 0) P1 (CD_Keyboard default_kbd_binding) in
+    c1#attach_to self;
+    let c2 = new cursor dom (7, 7) P2 (CD_Gamepad default_gp_binding) in
+    c2#attach_to self;
     Dom.appendChild dom score_div;
     self#update_score;
     let c =
@@ -122,8 +226,12 @@ object(self)
     in
     Dom.appendChild dom (c#rebind_btn)
 
+  method subscribe_gamepad f =
+    gamepad_watch#subscribe f
+
   method anim =
     self#every_nth_frame 100 (fun () -> self#select_spawner);
+    gamepad_watch#reload;
     List.iter (fun s -> s#anim self) spawners;
     List.iter (fun m -> m#anim self) mouses
 
