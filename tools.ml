@@ -155,3 +155,10 @@ let queue_delete q x0 =
   ) q;
   Queue.clear q;
   Queue.transfer q' q
+
+let gamepad_of_event = function
+  | GP_Axis (n, _, _) -> n
+  | GP_Btn (n, _) -> n
+
+let gamepad_of_binding b =
+  List.hd b |> fst |> gamepad_of_event

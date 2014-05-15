@@ -54,7 +54,7 @@ class gamepad_watch = object(self)
       ; gp_btns = [||]
       }
 
-  val mutable notify_func = None
+  val notify_funcs = Array.make gp_max None
 
   method reload =
     let gps = Gamepad.getGamepads () in
@@ -69,19 +69,24 @@ class gamepad_watch = object(self)
     let new_state = gp_state_from_gamepads gp in
     begin if state.gp_ts <> new_state.gp_ts then
       match gp_event_from_state new_state n with
-      | Some e -> self#fire e
+      | Some e -> self#fire e n
       | None -> ()
     end;
     states.(n) <- new_state
 
-  method subscribe f =
-    notify_func <- Some f
+  method subscribe n f =
+    notify_funcs.(n) <- Some f
 
-  method unsubscribe =
-    notify_func <- None
+  method subscribe_all f =
+    for i = 0 to gp_max - 1 do
+      self#subscribe i f
+    done
 
-  method fire x =
-    match notify_func with
+  method unsubscribe n =
+    notify_funcs.(n) <- None
+
+  method fire x n =
+    match notify_funcs.(n) with
     | None -> ()
     | Some f -> f x
 
@@ -232,11 +237,14 @@ object(self)
     a#detach;
     self#set (a#pos) None
 
-  method subscribe_gamepad f =
-    gamepad_watch#subscribe f
+  method subscribe_gamepad n f =
+    gamepad_watch#subscribe n f
 
-  method unsubscribe_gamepad =
-    gamepad_watch#unsubscribe
+  method subscribe_all_gamepads f =
+    gamepad_watch#subscribe_all f
+
+  method unsubscribe_gamepad n =
+    gamepad_watch#unsubscribe n
 
   val mutable active = false
 

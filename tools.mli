@@ -44,3 +44,7 @@ val assoc_opt : 'a -> ('a * 'b) list -> 'b option
 val array_findi : 'a array -> (int -> 'a -> 'b option) -> 'b option
 
 val queue_delete : 'a Queue.t -> 'a -> unit
+
+val gamepad_of_event : Types.gp_event -> Types.gamepad_num
+
+val gamepad_of_binding : Types.gp_binding -> Types.gamepad_num

@@ -36,7 +36,8 @@ object(self)
         Js._true
       )
     | CD_Gamepad binding ->
-        game#subscribe_gamepad (fun e ->
+        let n = gamepad_of_binding binding in
+        game#subscribe_gamepad n (fun e ->
           match parse_gp binding e with
           | None -> ()
           | Some a -> self#interpret game a
@@ -46,8 +47,9 @@ object(self)
     match control with
     | CD_Keyboard _ ->
         Dom_html.document##onkeydown <- Dom_html.no_handler
-    | CD_Gamepad _ ->
-        game#unsubscribe_gamepad
+    | CD_Gamepad b ->
+        let n = gamepad_of_binding b in
+        game#unsubscribe_gamepad n
 
   method interpret game = function
     | ActMove d ->
