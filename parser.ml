@@ -25,10 +25,10 @@ let level_from_img img =
   let data = img##data in
   let width = img##width in
   let lw, lh = level_size img in
-  let level = Array.make_matrix lw lh CEmpty in
+  let level = Array.make_matrix lh lw CEmpty in
   let walls = ref [] in
   let pix (i, j) =
-    let base = 4*(i*width+j) in
+    let base = 4*(j*width+i) in
     let r = Dom_html.pixel_get data (base) in
     let g = Dom_html.pixel_get data (base+1) in
     let b = Dom_html.pixel_get data (base+2) in
@@ -54,7 +54,7 @@ let level_from_img img =
     | _ when ok pr -> R
     | _ -> invalid_arg "cannot find spawner dir"
   in
-  let get_cell j i =
+  let get_cell i j =
     let c = coord (i, j) in
     match pix c with
     | (0xff, 0xff, 0xff) -> CEmpty
@@ -63,11 +63,14 @@ let level_from_img img =
     | (0x00, 0xff, 0xff) ->
       let dir = find_spawner_dir c in
       CSpawner dir
-    | _ -> invalid_arg "parse_cell"
+    | (r, g, b) ->
+        invalid_arg (Printf.sprintf "parse_cell: %d %d %d @(%d, %d)" r g b i j)
   in
-  for i = 0 to lh - 1 do
-    for j = 0 to lw - 1 do
+  for j = 0 to lh - 1 do
+    for i = 0 to lw - 1 do
+      begin try
       level.(j).(i) <- get_cell i j
+      with e -> logprintf "exn %s" (Printexc.to_string e) end;
     done
   done;
   let v_wall i j =
@@ -79,11 +82,11 @@ let level_from_img img =
   let add_wall w =
     walls := w::!walls
   in
-  for i = 0 to lh - 1 do
-    for j = 0 to lw - 1 do
-      if i <> lh - 1 && v_wall i j then
+  for j = 0 to lh - 1 do
+    for i = 0 to lw - 1 do
+      if i <> lw - 1 && v_wall i j then
         add_wall ((i, j), (i+1, j));
-      if j <> lw - 1 && h_wall i j then
+      if j <> lh - 1 && h_wall i j then
         add_wall ((i, j), (i, j+1));
     done
   done;
@@ -106,11 +109,11 @@ let load_level imgsrc =
   img##src <- js imgsrc;
   Lwt_js_events.load img >>= fun _ ->
   let can = Dom_html.createCanvas Dom_html.document in
-  can##width <- 25;
-  can##height <- 25;
+  can##width <- img##width;
+  can##height <- img##height;
   let ctx = can##getContext(Dom_html._2d_) in
   ctx##drawImage(img, 0., 0.);
-  let img = ctx##getImageData(0., 0., 25., 25.) in
+  let img = ctx##getImageData(0., 0., float img##width, float img##height) in
   return (level_from_img img)
 
 let debug_parse parent imgsrc =
@@ -133,9 +136,10 @@ let from_pos (x1, y1) (x2, y2) =
 let new_game d imgsrc =
   let open Lwt in
   load_level imgsrc >>= (fun (level, walls) ->
-    let g = new game d in
-    for j = 0 to 7 do
-      for i = 0 to 7 do
+    let (w, h) = matrix_size level in
+    let g = new game d w h in
+    for j = 0 to h - 1 do
+      for i = 0 to w - 1 do
         match level.(j).(i) with
         | CEmpty -> ()
         | CSpawner d -> g#add_spawner (i, j) d

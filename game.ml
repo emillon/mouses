@@ -107,7 +107,7 @@ let default_gp_binding =
   ; (GP_Btn 1, ActArrow L)
   ]
 
-class game dom =
+class game dom w h =
   let score_div = div_class "score" in
 object(self)
   val dom = dom
@@ -118,7 +118,7 @@ object(self)
   val mutable interval_id = None
   val gamepad_watch = new gamepad_watch
 
-  val board = Array.make_matrix 8 8 None
+  val board = Array.make_matrix h w None
 
   val score = Hashtbl.create 2
 
@@ -126,19 +126,21 @@ object(self)
 
   val cursors = Hashtbl.create 2
 
-  val cells = init_matrix 8 8 (fun i j ->
+  val cells = init_matrix h w (fun i j ->
     let extraclass = if (i + j) mod 2 = 0 then "cell-even" else "cell-odd" in
     div_class ~extraclass "cell"
   )
 
   initializer
+    let container = getbyid_unsafe "container" in
+    container##style##width <- js(Printf.sprintf "%dpx" (60*w));
     Hashtbl.add score P1 0;
     Hashtbl.add score P2 0;
     Hashtbl.add arrows P1 (Queue.create ());
     Hashtbl.add arrows P2 (Queue.create ());
-    for j = 0 to 7 do
+    for j = 0 to h - 1 do
       let row = div_class "row" in
-      for i = 0 to 7 do
+      for i = 0 to w - 1 do
         let cell = cells.(j).(i) in
         cell##onmousedown <- Dom_html.handler (fun e -> Js._false);
         Dom.appendChild row cell
@@ -146,7 +148,7 @@ object(self)
       Dom.appendChild dom row
     done;
     let c1 = new cursor dom (0, 0) P1 (CD_Keyboard default_kbd_binding) in
-    let c2 = new cursor dom (7, 7) P2 (CD_Gamepad default_gp_binding) in
+    let c2 = new cursor dom (w-1, h-1) P2 (CD_Gamepad default_gp_binding) in
     Hashtbl.add cursors P1 c1;
     Hashtbl.add cursors P2 c2;
     c1#attach_to self;
@@ -209,7 +211,7 @@ object(self)
     self#set pos (Some (Sink s))
 
   method oob (x, y) =
-    not (0 <= x && x <= 7 && 0 <= y && y <= 7)
+    not (0 <= x && x < w && 0 <= y && y < h)
 
   method try_arrow pos dir player =
     match self#get pos with
@@ -298,10 +300,9 @@ object(self)
       | _ when (not (bump d3)) -> d3
       | _ -> failwith "All directions bump"
     in
-    if bump dir then
-      MA_Dir (adjust dir)
-    else
     match self#get (x, y) with
+    | Some (Sink s) -> MA_Sink (s#player)
+    | _ when bump dir -> MA_Dir (adjust dir)
     | Some (Arrow a) ->
         a#weaken;
         if a#is_dead then begin
@@ -310,7 +311,6 @@ object(self)
           queue_delete q a
         end;
         MA_Dir (adjust (a#dir))
-    | Some (Sink s) -> MA_Sink (s#player)
     | None
     | Some Spawner -> MA_Dir (adjust dir)
 
