@@ -155,3 +155,9 @@ let queue_delete q x0 =
   ) q;
   Queue.clear q;
   Queue.transfer q' q
+
+let matrix_size a =
+  Array.length a.(0), Array.length a
+
+let logprintf fmt =
+  Printf.ksprintf (fun s -> Firebug.console##log (js s)) fmt

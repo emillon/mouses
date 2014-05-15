@@ -22,7 +22,7 @@ let start_game dom level_name =
   g#start;
   return ()
 
-let level_list = ["01" ; "02"]
+let level_list = ["01" ; "02" ; "03"]
 
 let build_level_list dom game =
   List.iter (fun l ->

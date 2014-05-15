@@ -44,3 +44,7 @@ val assoc_opt : 'a -> ('a * 'b) list -> 'b option
 val array_findi : 'a array -> (int -> 'a -> 'b option) -> 'b option
 
 val queue_delete : 'a Queue.t -> 'a -> unit
+
+val matrix_size : 'a array array -> int * int
+
+val logprintf : ('a, unit, string, unit) format4 -> 'a
