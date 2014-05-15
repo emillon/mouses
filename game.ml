@@ -8,12 +8,6 @@ open Tools
 open Types
 open Wall
 
-let first_gp gps =
-  Js.Optdef.case
-    (Js.array_get gps 0)
-    (fun () -> None)
-    (fun x -> Some x)
-
 type axe_pos =
   | Axe_Neg
   | Axe_Zero
@@ -47,30 +41,38 @@ let gp_state_from_gamepads (gp:'a Js.t) =
   ; gp_btns = Js.to_array (gp##buttons)
   }
 
+let gp_max = 4
+
 (**
  * Something to track state of gamepads and notify on change.
  *)
 class gamepad_watch = object(self)
-  val mutable state =
-    { gp_ts = -1
-    ; gp_axes = [||]
-    ; gp_btns = [||]
-    }
+  val states =
+    Array.make gp_max
+      { gp_ts = -1
+      ; gp_axes = [||]
+      ; gp_btns = [||]
+      }
 
   val mutable notify_func = None
 
   method reload =
-    match first_gp (Gamepad.getGamepads ()) with
-    | None -> ()
-    | Some gp -> begin
-      let new_state = gp_state_from_gamepads gp in
-      begin if state.gp_ts <> new_state.gp_ts then
-        match gp_event_from_state new_state with
-        | Some e -> self#fire e
-        | None -> ()
-      end;
-      state <- new_state
-    end
+    let gps = Gamepad.getGamepads () in
+    for i = 0 to gp_max - 1 do
+      Js.Optdef.case (Js.array_get gps i)
+        (fun () -> ())
+        (fun gp -> self#reload_gp gp i)
+    done
+
+  method private reload_gp gp n =
+    let state = states.(n) in
+    let new_state = gp_state_from_gamepads gp in
+    begin if state.gp_ts <> new_state.gp_ts then
+      match gp_event_from_state new_state with
+      | Some e -> self#fire e
+      | None -> ()
+    end;
+    states.(n) <- new_state
 
   method subscribe f =
     notify_func <- Some f
