@@ -18,17 +18,17 @@ let axe_pos = function
   | x when x >  0.5 -> Axe_Pos
   | _ -> Axe_Zero
 
-let gp_event_from_state gp =
+let gp_event_from_state gp gp_num =
   let ax = array_findi gp.gp_axes (fun i x ->
     match axe_pos x with
-    | Axe_Neg -> Some (GP_Axis (i, GPA_Neg))
-    | Axe_Pos -> Some (GP_Axis (i, GPA_Pos))
+    | Axe_Neg -> Some (GP_Axis (gp_num, i, GPA_Neg))
+    | Axe_Pos -> Some (GP_Axis (gp_num, i, GPA_Pos))
     | Axe_Zero -> None
   ) in
   let btn =
     array_findi gp.gp_btns (fun i b ->
       if Gamepad.button_is_pressed b then
-        Some (GP_Btn i)
+        Some (GP_Btn (gp_num, i))
       else
         None
     )
@@ -68,7 +68,7 @@ class gamepad_watch = object(self)
     let state = states.(n) in
     let new_state = gp_state_from_gamepads gp in
     begin if state.gp_ts <> new_state.gp_ts then
-      match gp_event_from_state new_state with
+      match gp_event_from_state new_state n with
       | Some e -> self#fire e
       | None -> ()
     end;
@@ -98,15 +98,15 @@ let default_kbd_binding =
   ; (39, ActArrow R)
   ]
 
-let default_gp_binding =
-  [ (GP_Axis (0, GPA_Neg), ActMove L)
-  ; (GP_Axis (0, GPA_Pos), ActMove R)
-  ; (GP_Axis (1, GPA_Neg), ActMove U)
-  ; (GP_Axis (1, GPA_Pos), ActMove D)
-  ; (GP_Btn 5, ActArrow U)
-  ; (GP_Btn 4, ActArrow R)
-  ; (GP_Btn 0, ActArrow D)
-  ; (GP_Btn 1, ActArrow L)
+let default_gp_binding gp_num =
+  [ (GP_Axis (gp_num, 0, GPA_Neg), ActMove L)
+  ; (GP_Axis (gp_num, 0, GPA_Pos), ActMove R)
+  ; (GP_Axis (gp_num, 1, GPA_Neg), ActMove U)
+  ; (GP_Axis (gp_num, 1, GPA_Pos), ActMove D)
+  ; (GP_Btn (gp_num, 5), ActArrow U)
+  ; (GP_Btn (gp_num, 4), ActArrow R)
+  ; (GP_Btn (gp_num, 0), ActArrow D)
+  ; (GP_Btn (gp_num, 1), ActArrow L)
   ]
 
 class game dom =
@@ -148,7 +148,7 @@ object(self)
       Dom.appendChild dom row
     done;
     let c1 = new cursor dom (0, 0) P1 (CD_Keyboard default_kbd_binding) in
-    let c2 = new cursor dom (7, 7) P2 (CD_Gamepad default_gp_binding) in
+    let c2 = new cursor dom (7, 7) P2 (CD_Gamepad (default_gp_binding 0)) in
     Hashtbl.add cursors P1 c1;
     Hashtbl.add cursors P2 c2;
     c1#attach_to self;
