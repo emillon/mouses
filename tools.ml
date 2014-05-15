@@ -146,3 +146,12 @@ let array_findi a f =
     end
   ) a with Found -> () end;
   !r
+
+let queue_delete q x0 =
+  let q' = Queue.create () in
+  Queue.iter (fun x ->
+    if x <> x0 then
+    Queue.add x q'
+  ) q;
+  Queue.clear q;
+  Queue.transfer q' q

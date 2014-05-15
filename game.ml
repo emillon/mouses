@@ -224,11 +224,11 @@ object(self)
     let q = Hashtbl.find arrows player in
     Queue.add a q;
     if Queue.length q > 4 then
-      begin
-        let a_del = Queue.pop q in
-        a_del#detach;
-        self#set (a_del#pos) None (* TODO better: put coords in queue *)
-      end
+      self#remove_arrow (Queue.pop q)
+
+  method private remove_arrow a =
+    a#detach;
+    self#set (a#pos) None
 
   method subscribe_gamepad f =
     gamepad_watch#subscribe f
@@ -302,7 +302,14 @@ object(self)
       MA_Dir (adjust dir)
     else
     match self#get (x, y) with
-    | Some (Arrow a) -> MA_Dir (adjust (a#dir))
+    | Some (Arrow a) ->
+        a#weaken;
+        if a#is_dead then begin
+          self#remove_arrow a;
+          let q = Hashtbl.find arrows (a#player) in
+          queue_delete q a
+        end;
+        MA_Dir (adjust (a#dir))
     | Some (Sink s) -> MA_Sink (s#player)
     | None
     | Some Spawner -> MA_Dir (adjust dir)

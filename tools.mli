@@ -42,3 +42,5 @@ val init_matrix : int -> int -> (int -> int -> 'a) -> 'a array array
 val assoc_opt : 'a -> ('a * 'b) list -> 'b option
 
 val array_findi : 'a array -> (int -> 'a -> 'b option) -> 'b option
+
+val queue_delete : 'a Queue.t -> 'a -> unit
