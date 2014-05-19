@@ -48,3 +48,7 @@ val queue_delete : 'a Queue.t -> 'a -> unit
 val matrix_size : 'a array array -> int * int
 
 val logprintf : ('a, unit, string, unit) format4 -> 'a
+
+val gamepad_of_event : Types.gp_event -> Types.gamepad_num
+
+val gamepad_of_binding : Types.gp_binding -> Types.gamepad_num

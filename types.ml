@@ -29,9 +29,11 @@ type gp_axe_dir =
   | GPA_Neg
   | GPA_Pos
 
+type gamepad_num = int
+
 type gp_event =
-  | GP_Axis of int * gp_axe_dir
-  | GP_Btn of int
+  | GP_Axis of gamepad_num * int * gp_axe_dir
+  | GP_Btn of gamepad_num * int
 
 type kbd_binding = (int * action) list
 

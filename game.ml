@@ -8,12 +8,6 @@ open Tools
 open Types
 open Wall
 
-let first_gp gps =
-  Js.Optdef.case
-    (Js.array_get gps 0)
-    (fun () -> None)
-    (fun x -> Some x)
-
 type axe_pos =
   | Axe_Neg
   | Axe_Zero
@@ -24,17 +18,17 @@ let axe_pos = function
   | x when x >  0.5 -> Axe_Pos
   | _ -> Axe_Zero
 
-let gp_event_from_state gp =
+let gp_event_from_state gp gp_num =
   let ax = array_findi gp.gp_axes (fun i x ->
     match axe_pos x with
-    | Axe_Neg -> Some (GP_Axis (i, GPA_Neg))
-    | Axe_Pos -> Some (GP_Axis (i, GPA_Pos))
+    | Axe_Neg -> Some (GP_Axis (gp_num, i, GPA_Neg))
+    | Axe_Pos -> Some (GP_Axis (gp_num, i, GPA_Pos))
     | Axe_Zero -> None
   ) in
   let btn =
     array_findi gp.gp_btns (fun i b ->
       if Gamepad.button_is_pressed b then
-        Some (GP_Btn i)
+        Some (GP_Btn (gp_num, i))
       else
         None
     )
@@ -47,39 +41,52 @@ let gp_state_from_gamepads (gp:'a Js.t) =
   ; gp_btns = Js.to_array (gp##buttons)
   }
 
+let gp_max = 4
+
 (**
  * Something to track state of gamepads and notify on change.
  *)
 class gamepad_watch = object(self)
-  val mutable state =
-    { gp_ts = -1
-    ; gp_axes = [||]
-    ; gp_btns = [||]
-    }
+  val states =
+    Array.make gp_max
+      { gp_ts = -1
+      ; gp_axes = [||]
+      ; gp_btns = [||]
+      }
 
-  val mutable notify_func = None
+  val notify_funcs = Array.make gp_max None
 
   method reload =
-    match first_gp (Gamepad.getGamepads ()) with
-    | None -> ()
-    | Some gp -> begin
-      let new_state = gp_state_from_gamepads gp in
-      begin if state.gp_ts <> new_state.gp_ts then
-        match gp_event_from_state new_state with
-        | Some e -> self#fire e
-        | None -> ()
-      end;
-      state <- new_state
-    end
+    let gps = Gamepad.getGamepads () in
+    for i = 0 to gp_max - 1 do
+      Js.Optdef.case (Js.array_get gps i)
+        (fun () -> ())
+        (fun gp -> self#reload_gp gp i)
+    done
 
-  method subscribe f =
-    notify_func <- Some f
+  method private reload_gp gp n =
+    let state = states.(n) in
+    let new_state = gp_state_from_gamepads gp in
+    begin if state.gp_ts <> new_state.gp_ts then
+      match gp_event_from_state new_state n with
+      | Some e -> self#fire e n
+      | None -> ()
+    end;
+    states.(n) <- new_state
 
-  method unsubscribe =
-    notify_func <- None
+  method subscribe n f =
+    notify_funcs.(n) <- Some f
 
-  method fire x =
-    match notify_func with
+  method subscribe_all f =
+    for i = 0 to gp_max - 1 do
+      self#subscribe i f
+    done
+
+  method unsubscribe n =
+    notify_funcs.(n) <- None
+
+  method fire x n =
+    match notify_funcs.(n) with
     | None -> ()
     | Some f -> f x
 
@@ -96,15 +103,15 @@ let default_kbd_binding =
   ; (39, ActArrow R)
   ]
 
-let default_gp_binding =
-  [ (GP_Axis (0, GPA_Neg), ActMove L)
-  ; (GP_Axis (0, GPA_Pos), ActMove R)
-  ; (GP_Axis (1, GPA_Neg), ActMove U)
-  ; (GP_Axis (1, GPA_Pos), ActMove D)
-  ; (GP_Btn 5, ActArrow U)
-  ; (GP_Btn 4, ActArrow R)
-  ; (GP_Btn 0, ActArrow D)
-  ; (GP_Btn 1, ActArrow L)
+let default_gp_binding gp_num =
+  [ (GP_Axis (gp_num, 0, GPA_Neg), ActMove L)
+  ; (GP_Axis (gp_num, 0, GPA_Pos), ActMove R)
+  ; (GP_Axis (gp_num, 1, GPA_Neg), ActMove U)
+  ; (GP_Axis (gp_num, 1, GPA_Pos), ActMove D)
+  ; (GP_Btn (gp_num, 5), ActArrow U)
+  ; (GP_Btn (gp_num, 4), ActArrow R)
+  ; (GP_Btn (gp_num, 0), ActArrow D)
+  ; (GP_Btn (gp_num, 1), ActArrow L)
   ]
 
 class game dom w h =
@@ -148,7 +155,7 @@ object(self)
       Dom.appendChild dom row
     done;
     let c1 = new cursor dom (0, 0) P1 (CD_Keyboard default_kbd_binding) in
-    let c2 = new cursor dom (w-1, h-1) P2 (CD_Gamepad default_gp_binding) in
+    let c2 = new cursor dom (w-1, h-1) P2 (CD_Gamepad (default_gp_binding 0)) in
     Hashtbl.add cursors P1 c1;
     Hashtbl.add cursors P2 c2;
     c1#attach_to self;
@@ -232,11 +239,14 @@ object(self)
     a#detach;
     self#set (a#pos) None
 
-  method subscribe_gamepad f =
-    gamepad_watch#subscribe f
+  method subscribe_gamepad n f =
+    gamepad_watch#subscribe n f
 
-  method unsubscribe_gamepad =
-    gamepad_watch#unsubscribe
+  method subscribe_all_gamepads f =
+    gamepad_watch#subscribe_all f
+
+  method unsubscribe_gamepad n =
+    gamepad_watch#unsubscribe n
 
   val mutable active = false
 

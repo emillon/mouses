@@ -161,3 +161,10 @@ let matrix_size a =
 
 let logprintf fmt =
   Printf.ksprintf (fun s -> Firebug.console##log (js s)) fmt
+
+let gamepad_of_event = function
+  | GP_Axis (n, _, _) -> n
+  | GP_Btn (n, _) -> n
+
+let gamepad_of_binding b =
+  List.hd b |> fst |> gamepad_of_event

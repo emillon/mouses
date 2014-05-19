@@ -157,7 +157,7 @@ object(self)
       self#onkeydown e;
       Js._true
     );
-    game#subscribe_gamepad self#ongamepad;
+    game#subscribe_all_gamepads self#ongamepad;
     Dom.appendChild popup closeBtn;
     Array.iter (fun s ->
       s#reset;
@@ -165,10 +165,11 @@ object(self)
     ) slots;
     Dom.appendChild parent popup
 
-  method ongamepad _ =
+  method ongamepad e :unit=
     let s = self#find_avail_slot in
+    let n = gamepad_of_event e in
     s#notavail;
-    game#subscribe_gamepad s#ongamepad
+    game#subscribe_gamepad n s#ongamepad
 
   method onkeydown e =
     let s = self#find_avail_slot in
